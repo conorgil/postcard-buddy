@@ -1,0 +1,7 @@
+node_modules
+dist
+*.local
+
+# Contains real voter names/addresses; the vendor's terms restrict
+# retaining/sharing this data beyond mailing the postcards.
+*.pdf
