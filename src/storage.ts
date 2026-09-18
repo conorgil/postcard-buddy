@@ -1,6 +1,6 @@
 import type { Card, ColumnId, Project, StoredState } from './types';
 
-const STORAGE_KEY = 'postcard-buddy:v1';
+const STORAGE_KEY = 'hello-fellow-voter:v1';
 
 function emptyState(): StoredState {
   return { version: 1, projects: [], activeProjectId: null, cards: [] };
@@ -12,12 +12,12 @@ function loadState(): StoredState {
   try {
     const parsed = JSON.parse(raw);
     if (parsed?.version !== 1) {
-      console.warn('postcard-buddy: unknown storage version, resetting state');
+      console.warn('hello-fellow-voter: unknown storage version, resetting state');
       return emptyState();
     }
     return parsed as StoredState;
   } catch (err) {
-    console.warn('postcard-buddy: failed to parse stored state, resetting', err);
+    console.warn('hello-fellow-voter: failed to parse stored state, resetting', err);
     return emptyState();
   }
 }

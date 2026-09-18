@@ -8,7 +8,7 @@ export function renderProjectList(container: HTMLElement, rerender: () => void):
   header.className = 'project-list-header';
 
   const title = document.createElement('h1');
-  title.textContent = 'Postcard Buddy';
+  title.textContent = 'Hello Fellow Voter';
 
   const newBtn = document.createElement('button');
   newBtn.className = 'btn btn--primary';
