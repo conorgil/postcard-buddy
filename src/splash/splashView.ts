@@ -1,5 +1,4 @@
-import { marked } from 'marked';
-import splashMarkdown from '../content/splash.md?raw';
+import splashHtml from '../content/splash.html?raw';
 import { dismissSplashPermanently } from './splashPrefs';
 
 export function openSplash(): void {
@@ -17,7 +16,7 @@ export function openSplash(): void {
 
   const content = document.createElement('div');
   content.className = 'splash-content';
-  content.innerHTML = marked.parse(splashMarkdown, { async: false }) as string;
+  content.innerHTML = splashHtml;
 
   const actions = document.createElement('div');
   actions.className = 'splash-actions';
