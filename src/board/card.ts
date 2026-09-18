@@ -1,17 +1,48 @@
 import { openDetailView } from '../detail/detailView';
 import { openCardForm } from '../forms/cardForm';
-import { deleteCard, moveCard } from '../storage';
+import { deleteCard, moveCard, moveCards } from '../storage';
 import { COLUMN_ORDER, type Card } from '../types';
 import { makeCardDraggable } from './dragDrop';
+import {
+  clearSelection,
+  getSelectedCount,
+  getSelectedIds,
+  isSelected,
+  removeFromSelection,
+  selectRange,
+  toggleSelect,
+} from './selection';
 
-export function createCardElement(card: Card, projectId: string, rerender: () => void): HTMLElement {
+export function createCardElement(
+  card: Card,
+  projectId: string,
+  columnCardIds: string[],
+  rerender: () => void,
+): HTMLElement {
   const el = document.createElement('div');
   el.className = 'card';
+  if (isSelected(card.id)) el.classList.add('card--selected');
   el.draggable = true;
   el.tabIndex = 0;
   el.setAttribute('role', 'button');
   el.dataset.cardId = card.id;
   el.setAttribute('aria-label', `${card.name}, ${card.street}, ${card.city}, ${card.state} ${card.zip}`);
+
+  const select = document.createElement('input');
+  select.type = 'checkbox';
+  select.className = 'card__select';
+  select.checked = isSelected(card.id);
+  select.setAttribute('aria-label', `Select ${card.name}`);
+  select.addEventListener('click', (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if ((e as MouseEvent).shiftKey) {
+      selectRange(columnCardIds, card.id);
+    } else {
+      toggleSelect(card.id);
+    }
+    rerender();
+  });
 
   const name = document.createElement('div');
   name.className = 'card__name';
@@ -41,28 +72,55 @@ export function createCardElement(card: Card, projectId: string, rerender: () =>
     e.stopPropagation();
     if (confirm(`Delete the card for ${card.name}?`)) {
       deleteCard(card.id);
+      removeFromSelection(card.id);
       rerender();
     }
   });
 
   controls.append(editBtn, deleteBtn);
-  el.append(name, addr, controls);
+  el.append(select, name, addr, controls);
 
-  el.addEventListener('click', () => openDetailView(card, rerender));
+  el.addEventListener('click', (e) => {
+    if (e.shiftKey) {
+      selectRange(columnCardIds, card.id);
+      rerender();
+      return;
+    }
+    if (e.ctrlKey || e.metaKey) {
+      toggleSelect(card.id);
+      rerender();
+      return;
+    }
+    openDetailView(card, projectId, rerender);
+  });
+
   el.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      openDetailView(card, rerender);
+      openDetailView(card, projectId, rerender);
       return;
     }
     const currentIndex = COLUMN_ORDER.indexOf(card.status);
+    const movingSelection = isSelected(card.id) && getSelectedCount() > 1;
     if (e.key === 'ArrowRight' && currentIndex < COLUMN_ORDER.length - 1) {
       e.preventDefault();
-      moveCard(card.id, COLUMN_ORDER[currentIndex + 1], null);
+      const target = COLUMN_ORDER[currentIndex + 1];
+      if (movingSelection) {
+        moveCards(getSelectedIds(), target);
+        clearSelection();
+      } else {
+        moveCard(card.id, target, null);
+      }
       rerender();
     } else if (e.key === 'ArrowLeft' && currentIndex > 0) {
       e.preventDefault();
-      moveCard(card.id, COLUMN_ORDER[currentIndex - 1], null);
+      const target = COLUMN_ORDER[currentIndex - 1];
+      if (movingSelection) {
+        moveCards(getSelectedIds(), target);
+        clearSelection();
+      } else {
+        moveCard(card.id, target, null);
+      }
       rerender();
     }
   });

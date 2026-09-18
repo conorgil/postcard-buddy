@@ -5,6 +5,7 @@ import { COLUMN_LABELS, COLUMN_ORDER, type Project } from '../types';
 import { showToast } from '../ui/toast';
 import { createCardElement } from './card';
 import { makeColumnDroppable } from './dragDrop';
+import { clearSelection, isSelected, toggleSelectAllInColumn } from './selection';
 
 function formatImportMessage(result: {
   importedCount: number;
@@ -38,6 +39,7 @@ export function renderBoardView(container: HTMLElement, project: Project, rerend
   backLink.textContent = '← All projects';
   backLink.addEventListener('click', () => {
     setActiveProject(null);
+    clearSelection();
     rerender();
   });
 
@@ -94,16 +96,32 @@ export function renderBoardView(container: HTMLElement, project: Project, rerend
     column.dataset.columnId = columnId;
 
     const columnCards = cards.filter((c) => c.status === columnId).sort((a, b) => a.order - b.order);
+    const columnCardIds = columnCards.map((c) => c.id);
+    const selectedInColumn = columnCardIds.filter((id) => isSelected(id)).length;
 
     const columnHeader = document.createElement('div');
     columnHeader.className = 'column__header';
-    columnHeader.textContent = `${COLUMN_LABELS[columnId]} (${columnCards.length})`;
+
+    const columnLabel = document.createElement('span');
+    columnLabel.textContent = `${COLUMN_LABELS[columnId]} (${columnCards.length})`;
+
+    const selectAllBtn = document.createElement('button');
+    selectAllBtn.className = 'column__select-all';
+    selectAllBtn.textContent =
+      selectedInColumn > 0 ? `${selectedInColumn} selected` : 'Select all';
+    selectAllBtn.disabled = columnCardIds.length === 0;
+    selectAllBtn.addEventListener('click', () => {
+      toggleSelectAllInColumn(columnCardIds);
+      rerender();
+    });
+
+    columnHeader.append(columnLabel, selectAllBtn);
 
     const columnBody = document.createElement('div');
     columnBody.className = 'column__body';
 
     for (const card of columnCards) {
-      columnBody.appendChild(createCardElement(card, project.id, rerender));
+      columnBody.appendChild(createCardElement(card, project.id, columnCardIds, rerender));
     }
 
     makeColumnDroppable(columnBody, columnId, rerender);

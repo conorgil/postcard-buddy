@@ -22,8 +22,51 @@ function loadState(): StoredState {
   }
 }
 
-function saveState(state: StoredState): void {
+function persistState(state: StoredState): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+const MAX_UNDO_HISTORY = 50;
+const undoHistory: string[] = [];
+const redoHistory: string[] = [];
+
+/** Persists a data-changing mutation, snapshotting the prior state so it can be undone. */
+function saveState(state: StoredState): void {
+  const previousRaw = localStorage.getItem(STORAGE_KEY);
+  if (previousRaw !== null) {
+    undoHistory.push(previousRaw);
+    if (undoHistory.length > MAX_UNDO_HISTORY) undoHistory.shift();
+  }
+  redoHistory.length = 0;
+  persistState(state);
+}
+
+export function canUndo(): boolean {
+  return undoHistory.length > 0;
+}
+
+export function canRedo(): boolean {
+  return redoHistory.length > 0;
+}
+
+/** Restores the most recent pre-mutation snapshot, if any. */
+export function undo(): boolean {
+  const previousRaw = undoHistory.pop();
+  if (previousRaw === undefined) return false;
+  const currentRaw = localStorage.getItem(STORAGE_KEY);
+  if (currentRaw !== null) redoHistory.push(currentRaw);
+  localStorage.setItem(STORAGE_KEY, previousRaw);
+  return true;
+}
+
+/** Re-applies the most recently undone snapshot, if any. */
+export function redo(): boolean {
+  const nextRaw = redoHistory.pop();
+  if (nextRaw === undefined) return false;
+  const currentRaw = localStorage.getItem(STORAGE_KEY);
+  if (currentRaw !== null) undoHistory.push(currentRaw);
+  localStorage.setItem(STORAGE_KEY, nextRaw);
+  return true;
 }
 
 export function getState(): StoredState {
@@ -44,7 +87,7 @@ export function getActiveProject(): Project | null {
 export function setActiveProject(id: string | null): void {
   const state = loadState();
   state.activeProjectId = id;
-  saveState(state);
+  persistState(state);
 }
 
 export function createProject(name: string): Project {
@@ -163,6 +206,29 @@ export function moveCard(cardId: string, newStatus: ColumnId, insertBeforeCardId
   }
 
   columnCards.forEach((c, i) => {
+    c.order = i;
+  });
+
+  saveState(state);
+}
+
+/** Moves multiple cards to a new column in one load/save cycle, preserving their relative order. */
+export function moveCards(cardIds: string[], newStatus: ColumnId): void {
+  const state = loadState();
+  const idSet = new Set(cardIds);
+  const movingCards = state.cards.filter((c) => idSet.has(c.id));
+  if (movingCards.length === 0) return;
+
+  const projectId = movingCards[0].projectId;
+  const existingColumnCards = state.cards
+    .filter((c) => c.projectId === projectId && c.status === newStatus && !idSet.has(c.id))
+    .sort((a, b) => a.order - b.order);
+
+  for (const card of movingCards) {
+    card.status = newStatus;
+  }
+
+  [...existingColumnCards, ...movingCards].forEach((c, i) => {
     c.order = i;
   });
 

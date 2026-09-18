@@ -1,7 +1,8 @@
 import './style.css';
 import { renderBoardView } from './board/render';
+import { clearSelection, getSelectedCount } from './board/selection';
 import { renderProjectList } from './projects/projectListView';
-import { getActiveProject } from './storage';
+import { getActiveProject, redo, undo } from './storage';
 
 const app: HTMLDivElement =
   document.querySelector<HTMLDivElement>('#app') ??
@@ -18,5 +19,29 @@ function render(): void {
     renderBoardView(app, activeProject, render);
   }
 }
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && getSelectedCount() > 0) {
+    clearSelection();
+    render();
+    return;
+  }
+
+  const hasModifier = e.metaKey || e.ctrlKey;
+  const key = e.key.toLowerCase();
+  const isUndoShortcut = hasModifier && !e.shiftKey && key === 'z';
+  const isRedoShortcut = (hasModifier && e.shiftKey && key === 'z') || (e.ctrlKey && key === 'y');
+  if (!isUndoShortcut && !isRedoShortcut) return;
+
+  const target = e.target;
+  if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return;
+  e.preventDefault();
+
+  const applied = isUndoShortcut ? undo() : redo();
+  if (applied) {
+    clearSelection();
+    render();
+  }
+});
 
 render();
