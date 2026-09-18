@@ -1,7 +1,7 @@
 import splashHtml from '../content/splash.html?raw';
 import { dismissSplashPermanently } from './splashPrefs';
 
-export function openSplash(): void {
+export function openSplash(offerPermanentDismiss = true): void {
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
 
@@ -21,20 +21,30 @@ export function openSplash(): void {
   const actions = document.createElement('div');
   actions.className = 'splash-actions';
 
-  const dismissBtn = document.createElement('button');
-  dismissBtn.className = 'btn btn--secondary';
-  dismissBtn.textContent = 'Dismiss for now';
-  dismissBtn.addEventListener('click', close);
+  if (offerPermanentDismiss) {
+    const dismissBtn = document.createElement('button');
+    dismissBtn.className = 'btn btn--secondary';
+    dismissBtn.textContent = 'Dismiss for now';
+    dismissBtn.addEventListener('click', close);
 
-  const neverShowBtn = document.createElement('button');
-  neverShowBtn.className = 'btn btn--primary';
-  neverShowBtn.textContent = "Don't show again";
-  neverShowBtn.addEventListener('click', () => {
-    dismissSplashPermanently();
-    close();
-  });
+    const neverShowBtn = document.createElement('button');
+    neverShowBtn.className = 'btn btn--primary';
+    neverShowBtn.textContent = "Don't show again";
+    neverShowBtn.addEventListener('click', () => {
+      dismissSplashPermanently();
+      close();
+    });
 
-  actions.append(dismissBtn, neverShowBtn);
+    actions.append(dismissBtn, neverShowBtn);
+  } else {
+    const dismissBtn = document.createElement('button');
+    dismissBtn.className = 'btn btn--primary';
+    dismissBtn.textContent = 'Dismiss';
+    dismissBtn.addEventListener('click', close);
+
+    actions.append(dismissBtn);
+  }
+
   panel.append(closeBtn, content, actions);
   overlay.appendChild(panel);
   document.body.appendChild(overlay);

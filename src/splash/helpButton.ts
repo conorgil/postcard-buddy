@@ -5,6 +5,6 @@ export function createHelpButton(): HTMLButtonElement {
   btn.className = 'btn btn--secondary help-btn';
   btn.setAttribute('aria-label', 'Help');
   btn.textContent = '?';
-  btn.addEventListener('click', () => openSplash());
+  btn.addEventListener('click', () => openSplash(false));
   return btn;
 }
