@@ -1,3 +1,4 @@
+import { createHelpButton } from '../splash/helpButton';
 import { createProject, deleteProject, getCardsForProject, getProjects, renameProject, setActiveProject } from '../storage';
 
 export function renderProjectList(container: HTMLElement, rerender: () => void): void {
@@ -20,7 +21,7 @@ export function renderProjectList(container: HTMLElement, rerender: () => void):
     rerender();
   });
 
-  header.append(title, newBtn);
+  header.append(title, newBtn, createHelpButton());
 
   const list = document.createElement('div');
   list.className = 'project-list';

@@ -1,5 +1,6 @@
 import { openCardForm } from '../forms/cardForm';
 import { importPdf } from '../pdf/importPdf';
+import { createHelpButton } from '../splash/helpButton';
 import { getCardsForProject, setActiveProject } from '../storage';
 import { COLUMN_LABELS, COLUMN_ORDER, type Project } from '../types';
 import { showToast } from '../ui/toast';
@@ -81,7 +82,7 @@ export function renderBoardView(container: HTMLElement, project: Project, rerend
   addCardBtn.textContent = '+ Add card';
   addCardBtn.addEventListener('click', () => openCardForm(project.id, rerender));
 
-  controls.append(uploadLabel, fileInput, addCardBtn);
+  controls.append(uploadLabel, fileInput, addCardBtn, createHelpButton());
   header.append(backLink, title, controls);
 
   // --- Columns ---

@@ -2,6 +2,8 @@ import './style.css';
 import { renderBoardView } from './board/render';
 import { clearSelection, getSelectedCount } from './board/selection';
 import { renderProjectList } from './projects/projectListView';
+import { isSplashPermanentlyDismissed } from './splash/splashPrefs';
+import { openSplash } from './splash/splashView';
 import { getActiveProject, redo, undo } from './storage';
 
 const app: HTMLDivElement =
@@ -45,3 +47,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 render();
+
+if (!isSplashPermanentlyDismissed()) {
+  openSplash();
+}
