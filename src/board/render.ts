@@ -1,31 +1,15 @@
 import { openCardForm } from '../forms/cardForm';
+import { openPasteImportForm } from '../forms/pasteImportForm';
 import { importPdf } from '../pdf/importPdf';
 import { createHelpButton } from '../splash/helpButton';
 import { getCardsForProject, setActiveProject } from '../storage';
 import { COLUMN_LABELS, COLUMN_ORDER, type Project } from '../types';
+import { createDropdownButton } from '../ui/dropdownMenu';
+import { formatImportMessage } from '../ui/importMessage';
 import { showToast } from '../ui/toast';
 import { createCardElement } from './card';
 import { makeColumnDroppable } from './dragDrop';
 import { clearSelection, isSelected, toggleSelectAllInColumn } from './selection';
-
-function formatImportMessage(result: {
-  importedCount: number;
-  duplicateCount: number;
-  skippedCount: number;
-}): string {
-  const parts = [`Imported ${result.importedCount} new card${result.importedCount === 1 ? '' : 's'}.`];
-  if (result.duplicateCount > 0) {
-    parts.push(`${result.duplicateCount} duplicate${result.duplicateCount === 1 ? '' : 's'} skipped.`);
-  }
-  if (result.skippedCount > 0) {
-    parts.push(
-      `${result.skippedCount} line${result.skippedCount === 1 ? '' : 's'} couldn't be parsed and ${
-        result.skippedCount === 1 ? 'was' : 'were'
-      } skipped.`,
-    );
-  }
-  return parts.join(' ');
-}
 
 export function renderBoardView(container: HTMLElement, project: Project, rerender: () => void): void {
   const wrapper = document.createElement('div');
@@ -57,10 +41,10 @@ export function renderBoardView(container: HTMLElement, project: Project, rerend
   fileInput.className = 'visually-hidden';
   fileInput.id = 'pdf-upload-input';
 
-  const uploadLabel = document.createElement('label');
-  uploadLabel.className = 'btn btn--secondary';
-  uploadLabel.htmlFor = fileInput.id;
-  uploadLabel.textContent = 'Upload PDF';
+  const importBtn = createDropdownButton('Import voters', [
+    { label: 'Parse a PDF', onSelect: () => fileInput.click() },
+    { label: 'Copy/paste', onSelect: () => openPasteImportForm(project.id, rerender) },
+  ]);
 
   fileInput.addEventListener('change', async () => {
     const file = fileInput.files?.[0];
@@ -82,7 +66,7 @@ export function renderBoardView(container: HTMLElement, project: Project, rerend
   addCardBtn.textContent = '+ Add card';
   addCardBtn.addEventListener('click', () => openCardForm(project.id, rerender));
 
-  controls.append(uploadLabel, fileInput, addCardBtn, createHelpButton());
+  controls.append(importBtn, fileInput, addCardBtn, createHelpButton());
   header.append(backLink, title, controls);
 
   // --- Columns ---

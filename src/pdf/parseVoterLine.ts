@@ -18,16 +18,8 @@ function isStreetStartToken(token: string): boolean {
   return /^\d/.test(bare) || /^p\.?o\.?$/i.test(bare) || /^room$/i.test(bare);
 }
 
-/**
- * Parses one raw line of extracted PDF text into a name/address record.
- * Returns null for anything that isn't a data row (headers, footers,
- * front-matter) or that doesn't fit the expected shape.
- */
-export function parseVoterLine(rawLine: string): ParsedRecord | null {
-  const prefixMatch = ROW_PREFIX.exec(rawLine.trim());
-  if (!prefixMatch) return null;
-  const rest = prefixMatch[2];
-
+/** Parses "name + street, City, ST ZIP" (no leading row index) into a record. */
+function parseAddressLine(rest: string): ParsedRecord | null {
   const tailMatch = TAIL.exec(rest);
   if (!tailMatch) return null;
   const [tailFull, city, state, zip] = tailMatch;
@@ -46,6 +38,28 @@ export function parseVoterLine(rawLine: string): ParsedRecord | null {
   if (!name || !street) return null;
 
   return { name, street, city: city.trim(), state, zip };
+}
+
+/**
+ * Parses one raw line of extracted PDF text into a name/address record.
+ * Returns null for anything that isn't a data row (headers, footers,
+ * front-matter) or that doesn't fit the expected shape.
+ */
+export function parseVoterLine(rawLine: string): ParsedRecord | null {
+  const prefixMatch = ROW_PREFIX.exec(rawLine.trim());
+  if (!prefixMatch) return null;
+  return parseAddressLine(prefixMatch[2]);
+}
+
+/**
+ * Parses one line of hand-pasted voter text. Same shape as parseVoterLine,
+ * but the leading row index is optional since pasted lists rarely have one.
+ */
+export function parsePastedLine(rawLine: string): ParsedRecord | null {
+  const trimmed = rawLine.trim();
+  if (!trimmed) return null;
+  const prefixMatch = ROW_PREFIX.exec(trimmed);
+  return parseAddressLine(prefixMatch ? prefixMatch[2] : trimmed);
 }
 
 /** True for any line that looks like a data row (starts with an index number),

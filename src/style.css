@@ -477,8 +477,65 @@ button {
   flex-shrink: 0;
 }
 
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown__menu {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 0.35rem;
+  min-width: 160px;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.dropdown__item {
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 0.5rem 0.6rem;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--color-text);
+  font-size: 0.9rem;
+}
+.dropdown__item:hover {
+  background: #f0f1f3;
+}
+
 .form-panel {
   min-width: min(420px, 90vw);
+}
+
+.paste-import-panel {
+  width: min(560px, 90vw);
+}
+
+.paste-import-hint {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  margin: -0.5rem 0 1rem;
+}
+
+.paste-import-textarea {
+  font: inherit;
+  font-family: "Courier New", ui-monospace, monospace;
+  font-size: 0.9rem;
+  padding: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  color: var(--color-text);
+  min-height: 220px;
+  resize: vertical;
 }
 
 .form-field {

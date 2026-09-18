@@ -1,4 +1,3 @@
-import { createHelpButton } from '../splash/helpButton';
 import { createProject, deleteProject, getCardsForProject, getProjects, renameProject, setActiveProject } from '../storage';
 
 export function renderProjectList(container: HTMLElement, rerender: () => void): void {
@@ -21,7 +20,7 @@ export function renderProjectList(container: HTMLElement, rerender: () => void):
     rerender();
   });
 
-  header.append(title, newBtn, createHelpButton());
+  header.append(title, newBtn);
 
   const list = document.createElement('div');
   list.className = 'project-list';
@@ -31,7 +30,7 @@ export function renderProjectList(container: HTMLElement, rerender: () => void):
   if (projects.length === 0) {
     const empty = document.createElement('p');
     empty.className = 'project-list-empty';
-    empty.textContent = 'No projects yet. Create one to import a voter list PDF and start writing postcards.';
+    empty.textContent = 'No projects yet. Create one to import a voter list PDF and start writing.';
     list.appendChild(empty);
   }
 
