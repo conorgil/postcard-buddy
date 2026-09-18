@@ -23,19 +23,19 @@ export function openSplash(offerPermanentDismiss = true): void {
 
   if (offerPermanentDismiss) {
     const dismissBtn = document.createElement('button');
-    dismissBtn.className = 'btn btn--secondary';
-    dismissBtn.textContent = 'Dismiss for now';
+    dismissBtn.className = 'btn btn--primary';
+    dismissBtn.textContent = 'Dismiss';
     dismissBtn.addEventListener('click', close);
 
     const neverShowBtn = document.createElement('button');
-    neverShowBtn.className = 'btn btn--primary';
+    neverShowBtn.className = 'btn btn--secondary';
     neverShowBtn.textContent = "Don't show again";
     neverShowBtn.addEventListener('click', () => {
       dismissSplashPermanently();
       close();
     });
 
-    actions.append(dismissBtn, neverShowBtn);
+    actions.append(neverShowBtn, dismissBtn);
   } else {
     const dismissBtn = document.createElement('button');
     dismissBtn.className = 'btn btn--primary';
