@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { looksLikeDataRow, parseVoterLine } from './parseVoterLine';
+import { looksLikeDataRow, looksLikeSuspectedAddress, parseVoterLine } from './parseVoterLine';
 
 const cases: Array<[string, ReturnType<typeof parseVoterLine>]> = [
   [
@@ -97,6 +97,32 @@ describe('looksLikeDataRow', () => {
 
   it('is false for lines with no real City, ST ZIP tail, even if they start with digits', () => {
     expect(looksLikeDataRow('5131 W. GIRARD PMB#1, 5131 W. GIRARD PMB#1,')).toBe(false);
+  });
+});
+
+describe('looksLikeSuspectedAddress', () => {
+  it('is true for a garbled line with a state+zip fragment but no comma before the city', () => {
+    expect(looksLikeSuspectedAddress('PHILADELPHIA, PA 19131 PHILADELPHIA, PA 19131')).toBe(true);
+  });
+
+  it('is true for a line that looks like the start of a street address', () => {
+    expect(looksLikeSuspectedAddress('5131 W. GIRARD PMB#1, 5131 W. GIRARD PMB#1,')).toBe(true);
+  });
+
+  it('is true for lines already recognized as full data rows', () => {
+    expect(looksLikeSuspectedAddress('AAJAYLAH FRAZIER, 6217 ALGARD ST, PHILADELPHIA, PA 19135')).toBe(true);
+  });
+
+  it('is false for header/footer lines with no address-like signal', () => {
+    expect(looksLikeSuspectedAddress('# WRITE TO MAIL TO')).toBe(false);
+    expect(looksLikeSuspectedAddress('page 2 of 26')).toBe(false);
+    expect(looksLikeSuspectedAddress('TERMS OF USE. These voter addresses are provided solely to address and mail')).toBe(
+      false,
+    );
+  });
+
+  it('is false for an empty line', () => {
+    expect(looksLikeSuspectedAddress('')).toBe(false);
   });
 });
 

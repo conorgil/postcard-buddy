@@ -1,16 +1,22 @@
 import { addCards, dedupeKey, getCardsForProject } from '../storage';
 import type { Card } from '../types';
 import { extractAllLines } from './extractLines';
-import { looksLikeDataRow, parseVoterLine, type ParsedRecord } from './parseVoterLine';
+import { looksLikeDataRow, looksLikeSuspectedAddress, parseVoterLine, type ParsedRecord } from './parseVoterLine';
 
 export interface ImportResult {
   importedCount: number;
   duplicateCount: number;
   skippedCount: number;
+  suspectedLines: string[];
 }
 
-/** Dedupes and persists already-parsed records; skippedCount just passes through for the caller's report. */
-export function importRecords(projectId: string, records: ParsedRecord[], skippedCount = 0): ImportResult {
+/** Dedupes and persists already-parsed records; skippedCount/suspectedLines just pass through for the caller's report. */
+export function importRecords(
+  projectId: string,
+  records: ParsedRecord[],
+  skippedCount = 0,
+  suspectedLines: string[] = [],
+): ImportResult {
   const existingCards = getCardsForProject(projectId);
   const existingKeys = new Set(
     existingCards.map((c) => dedupeKey(projectId, c.name, c.street, c.city, c.state, c.zip)),
@@ -48,7 +54,7 @@ export function importRecords(projectId: string, records: ParsedRecord[], skippe
 
   addCards(newCards);
 
-  return { importedCount: imported, duplicateCount: duplicates, skippedCount };
+  return { importedCount: imported, duplicateCount: duplicates, skippedCount, suspectedLines };
 }
 
 export async function importPdf(projectId: string, file: File): Promise<ImportResult> {
@@ -56,10 +62,14 @@ export async function importPdf(projectId: string, file: File): Promise<ImportRe
   const lines = await extractAllLines(buf);
 
   const records: ParsedRecord[] = [];
+  const suspectedLines: string[] = [];
   let skipped = 0;
 
   for (const line of lines) {
-    if (!looksLikeDataRow(line)) continue; // header/footer/front-matter — not a failure
+    if (!looksLikeDataRow(line)) {
+      if (looksLikeSuspectedAddress(line)) suspectedLines.push(line);
+      continue; // header/footer/front-matter — not a failure
+    }
 
     const record = parseVoterLine(line);
     if (!record) {
@@ -69,5 +79,5 @@ export async function importPdf(projectId: string, file: File): Promise<ImportRe
     records.push(record);
   }
 
-  return importRecords(projectId, records, skipped);
+  return importRecords(projectId, records, skipped, suspectedLines);
 }

@@ -34,4 +34,6 @@ export interface StoredState {
   projects: Project[];
   activeProjectId: string | null;
   cards: Card[];
+  /** Lines from a PDF/paste import that might be addresses but couldn't be parsed automatically, awaiting manual review. */
+  suspectQueues: Record<string, string[]>;
 }

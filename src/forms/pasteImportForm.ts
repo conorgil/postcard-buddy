@@ -1,6 +1,8 @@
 import { importPastedText } from '../pdf/importPastedText';
+import { addToSuspectQueue, getSuspectQueue } from '../storage';
 import { showToast } from '../ui/toast';
 import { formatImportMessage } from '../ui/importMessage';
+import { openReviewSuspectsForm } from './reviewSuspectsForm';
 
 export function openPasteImportForm(projectId: string, rerender: () => void): void {
   const overlay = document.createElement('div');
@@ -66,7 +68,11 @@ export function openPasteImportForm(projectId: string, rerender: () => void): vo
     const result = importPastedText(projectId, textarea.value);
     close();
     showToast(formatImportMessage(result), 'success');
+    addToSuspectQueue(projectId, result.suspectedLines);
     rerender();
+    if (getSuspectQueue(projectId).length > 0) {
+      openReviewSuspectsForm(projectId, rerender);
+    }
   });
 
   textarea.focus();

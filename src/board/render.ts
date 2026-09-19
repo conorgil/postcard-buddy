@@ -1,9 +1,10 @@
 import { exportVoterStatusPdf } from '../export/exportVoterStatusPdf';
 import { openCardForm } from '../forms/cardForm';
 import { openPasteImportForm } from '../forms/pasteImportForm';
+import { openReviewSuspectsForm } from '../forms/reviewSuspectsForm';
 import { importPdf } from '../pdf/importPdf';
 import { createHelpButton } from '../splash/helpButton';
-import { getCardsForProject, setActiveProject } from '../storage';
+import { addToSuspectQueue, getCardsForProject, getSuspectQueue, setActiveProject } from '../storage';
 import { COLUMN_LABELS, COLUMN_ORDER, type Project } from '../types';
 import { createDropdownButton } from '../ui/dropdownMenu';
 import { formatImportMessage } from '../ui/importMessage';
@@ -53,7 +54,11 @@ export function renderBoardView(container: HTMLElement, project: Project, rerend
     try {
       const result = await importPdf(project.id, file);
       showToast(formatImportMessage(result), 'success');
+      addToSuspectQueue(project.id, result.suspectedLines);
       rerender();
+      if (getSuspectQueue(project.id).length > 0) {
+        openReviewSuspectsForm(project.id, rerender);
+      }
     } catch (err) {
       console.error(err);
       showToast('Could not read this PDF. Please check the file and try again.', 'error');
@@ -72,10 +77,21 @@ export function renderBoardView(container: HTMLElement, project: Project, rerend
   exportBtn.textContent = 'Export voters';
   exportBtn.addEventListener('click', () => {
     exportVoterStatusPdf(project, getCardsForProject(project.id));
-    showToast('Exported voter status PDF.', 'success');
+    showToast('Exported progress PDF.', 'success');
   });
 
-  controls.append(addVoterBtn, importBtn, fileInput, exportBtn, createHelpButton());
+  controls.append(addVoterBtn, importBtn, fileInput, exportBtn);
+
+  const pendingSuspects = getSuspectQueue(project.id);
+  if (pendingSuspects.length > 0) {
+    const reviewSuspectsBtn = document.createElement('button');
+    reviewSuspectsBtn.className = 'btn btn--secondary';
+    reviewSuspectsBtn.textContent = `Review possible addresses (${pendingSuspects.length})`;
+    reviewSuspectsBtn.addEventListener('click', () => openReviewSuspectsForm(project.id, rerender));
+    controls.append(reviewSuspectsBtn);
+  }
+
+  controls.append(createHelpButton());
   header.append(backLink, title, controls);
 
   // --- Columns ---

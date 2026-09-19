@@ -3,7 +3,7 @@ import type { Card, ColumnId, Project, StoredState } from './types';
 const STORAGE_KEY = 'hello-fellow-voter:v1';
 
 function emptyState(): StoredState {
-  return { version: 1, projects: [], activeProjectId: null, cards: [] };
+  return { version: 1, projects: [], activeProjectId: null, cards: [], suspectQueues: {} };
 }
 
 function loadState(): StoredState {
@@ -15,6 +15,8 @@ function loadState(): StoredState {
       console.warn('hello-fellow-voter: unknown storage version, resetting state');
       return emptyState();
     }
+    // Older stored state predates the suspect-address review queue.
+    if (!parsed.suspectQueues) parsed.suspectQueues = {};
     return parsed as StoredState;
   } catch (err) {
     console.warn('hello-fellow-voter: failed to parse stored state, resetting', err);
@@ -257,4 +259,31 @@ export function dedupeKey(
 ): string {
   const zip5 = zip.slice(0, 5);
   return `${projectId}|${normalize(name)}|${normalize(street)}|${normalize(city)}|${normalize(state)}|${zip5}`;
+}
+
+// --- Suspected-address review queue (per-project, ephemeral import review aid) ---
+
+export function getSuspectQueue(projectId: string): string[] {
+  return loadState().suspectQueues[projectId] ?? [];
+}
+
+/** Appends newly-found suspect lines to a project's review queue, skipping exact duplicates already queued. */
+export function addToSuspectQueue(projectId: string, lines: string[]): void {
+  if (lines.length === 0) return;
+  const state = loadState();
+  const existing = state.suspectQueues[projectId] ?? [];
+  const existingSet = new Set(existing);
+  const additions = lines.filter((line) => !existingSet.has(line));
+  if (additions.length === 0) return;
+  state.suspectQueues[projectId] = [...existing, ...additions];
+  saveState(state);
+}
+
+/** Removes one resolved line (added as a card, or discarded) from a project's review queue. */
+export function removeFromSuspectQueue(projectId: string, line: string): void {
+  const state = loadState();
+  const existing = state.suspectQueues[projectId];
+  if (!existing) return;
+  state.suspectQueues[projectId] = existing.filter((l) => l !== line);
+  saveState(state);
 }

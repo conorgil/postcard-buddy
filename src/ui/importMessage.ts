@@ -12,5 +12,12 @@ export function formatImportMessage(result: ImportResult): string {
       } skipped.`,
     );
   }
+  if (result.suspectedLines.length > 0) {
+    parts.push(
+      `${result.suspectedLines.length} line${result.suspectedLines.length === 1 ? '' : 's'} might be ${
+        result.suspectedLines.length === 1 ? 'an address' : 'addresses'
+      } — review ${result.suspectedLines.length === 1 ? 'it' : 'them'} now.`,
+    );
+  }
   return parts.join(' ');
 }

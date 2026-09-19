@@ -116,3 +116,24 @@ export function parsePastedLine(rawLine: string): ParsedRecord | null {
 export function looksLikeDataRow(rawLine: string): boolean {
   return TAIL.test(rawLine.trim());
 }
+
+// A plausible "STATE ZIP" fragment, without TAIL's strict comma-anchored
+// structure — catches things like a garbled duplicate line where the city
+// isn't preceded by a comma.
+const SUSPECT_STATE_ZIP = /\b[A-Z]{2}\s+\d{5}(-\d{4})?\b/;
+// A line that starts like the beginning of a street address ("<number>
+// <word...>"), e.g. a partial address truncated by a page break, or a
+// garbled duplicate street line with no city/state/zip attached at all.
+const SUSPECT_STREET_START = /^\d+\s+\S+.*[A-Za-z]{2,}/;
+
+/**
+ * A deliberately loose heuristic for "this line might be an address, even
+ * though it didn't match a real City, ST ZIP tail." Meant only to flag lines
+ * for human review, not to auto-import them — false positives just mean an
+ * extra line to glance at and discard, while false negatives mean a real
+ * address is lost with no way to recover it.
+ */
+export function looksLikeSuspectedAddress(rawLine: string): boolean {
+  const trimmed = rawLine.trim();
+  return SUSPECT_STATE_ZIP.test(trimmed) || SUSPECT_STREET_START.test(trimmed);
+}

@@ -1,14 +1,17 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
   addCard,
+  addToSuspectQueue,
   canRedo,
   canUndo,
   createProject,
   dedupeKey,
   deleteCard,
   getCardsForProject,
+  getSuspectQueue,
   normalize,
   redo,
+  removeFromSuspectQueue,
   undo,
 } from './storage';
 
@@ -131,5 +134,41 @@ describe('redo', () => {
     addCard(project.id, { name: 'E', street: '5 E St', city: 'X', state: 'NY', zip: '10001' });
     expect(canRedo()).toBe(false);
     expect(redo()).toBe(false);
+  });
+});
+
+describe('suspect queue', () => {
+  it('is empty for a project with no pending review lines', () => {
+    const project = createProject('Suspects Project');
+    expect(getSuspectQueue(project.id)).toEqual([]);
+  });
+
+  it('appends new lines and skips exact duplicates already queued', () => {
+    const project = createProject('Dedupe Project');
+    addToSuspectQueue(project.id, ['line one', 'line two']);
+    addToSuspectQueue(project.id, ['line two', 'line three']);
+    expect(getSuspectQueue(project.id)).toEqual(['line one', 'line two', 'line three']);
+  });
+
+  it('scopes the queue per project', () => {
+    const a = createProject('Project A');
+    const b = createProject('Project B');
+    addToSuspectQueue(a.id, ['only in A']);
+    expect(getSuspectQueue(a.id)).toEqual(['only in A']);
+    expect(getSuspectQueue(b.id)).toEqual([]);
+  });
+
+  it('removes one resolved line, leaving the rest queued', () => {
+    const project = createProject('Resolve Project');
+    addToSuspectQueue(project.id, ['keep me', 'remove me']);
+    removeFromSuspectQueue(project.id, 'remove me');
+    expect(getSuspectQueue(project.id)).toEqual(['keep me']);
+  });
+
+  it('does nothing when removing a line that is not queued', () => {
+    const project = createProject('No-op Project');
+    addToSuspectQueue(project.id, ['keep me']);
+    removeFromSuspectQueue(project.id, 'never queued');
+    expect(getSuspectQueue(project.id)).toEqual(['keep me']);
   });
 });
