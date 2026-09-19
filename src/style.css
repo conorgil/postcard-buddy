@@ -394,7 +394,7 @@ button {
 }
 
 .splash-panel {
-  width: min(700px, 90vw);
+  width: min(800px, 90vw);
   max-height: 85vh;
   display: flex;
   flex-direction: column;
