@@ -498,6 +498,10 @@ button {
   gap: 0.15rem;
 }
 
+.dropdown__menu[hidden] {
+  display: none;
+}
+
 .dropdown__item {
   border: none;
   background: transparent;

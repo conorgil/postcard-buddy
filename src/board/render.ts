@@ -1,3 +1,4 @@
+import { exportVoterStatusPdf } from '../export/exportVoterStatusPdf';
 import { openCardForm } from '../forms/cardForm';
 import { openPasteImportForm } from '../forms/pasteImportForm';
 import { importPdf } from '../pdf/importPdf';
@@ -61,12 +62,20 @@ export function renderBoardView(container: HTMLElement, project: Project, rerend
     }
   });
 
-  const addCardBtn = document.createElement('button');
-  addCardBtn.className = 'btn btn--primary';
-  addCardBtn.textContent = '+ Add card';
-  addCardBtn.addEventListener('click', () => openCardForm(project.id, rerender));
+  const addVoterBtn = document.createElement('button');
+  addVoterBtn.className = 'btn btn--primary';
+  addVoterBtn.textContent = '+ Add voter';
+  addVoterBtn.addEventListener('click', () => openCardForm(project.id, rerender));
 
-  controls.append(importBtn, fileInput, addCardBtn, createHelpButton());
+  const exportBtn = document.createElement('button');
+  exportBtn.className = 'btn btn--secondary';
+  exportBtn.textContent = 'Export voters';
+  exportBtn.addEventListener('click', () => {
+    exportVoterStatusPdf(project, getCardsForProject(project.id));
+    showToast('Exported voter status PDF.', 'success');
+  });
+
+  controls.append(addVoterBtn, importBtn, fileInput, exportBtn, createHelpButton());
   header.append(backLink, title, controls);
 
   // --- Columns ---
