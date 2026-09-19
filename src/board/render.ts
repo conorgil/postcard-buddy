@@ -77,7 +77,7 @@ export function renderBoardView(container: HTMLElement, project: Project, rerend
   exportBtn.textContent = 'Export voters';
   exportBtn.addEventListener('click', () => {
     exportVoterStatusPdf(project, getCardsForProject(project.id));
-    showToast('Exported progress PDF.', 'success');
+    showToast('Exported voter status PDF.', 'success');
   });
 
   controls.append(addVoterBtn, importBtn, fileInput, exportBtn);
