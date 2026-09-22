@@ -1,6 +1,7 @@
-import { createProject } from '../storage';
+import { renameProject } from '../storage';
+import type { Project } from '../types';
 
-export function openNewProjectForm(rerender: () => void): void {
+export function openRenameProjectForm(project: Project, rerender: () => void): void {
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
 
@@ -8,11 +9,7 @@ export function openNewProjectForm(rerender: () => void): void {
   panel.className = 'panel form-panel';
 
   const title = document.createElement('h2');
-  title.textContent = 'New project';
-
-  const hint = document.createElement('p');
-  hint.className = 'form-hint';
-  hint.textContent = 'Projects are a way to organize your voter lists. You can name a project anything you want, create multiple projects, and switch between projects anytime.';
+  title.textContent = 'Rename project';
 
   const form = document.createElement('form');
 
@@ -21,6 +18,7 @@ export function openNewProjectForm(rerender: () => void): void {
   const nameInput = document.createElement('input');
   nameInput.type = 'text';
   nameInput.required = true;
+  nameInput.value = project.name;
   field.append(nameInput);
 
   const errorText = document.createElement('p');
@@ -36,14 +34,14 @@ export function openNewProjectForm(rerender: () => void): void {
   cancelBtn.textContent = 'Cancel';
   cancelBtn.addEventListener('click', close);
 
-  const createBtn = document.createElement('button');
-  createBtn.type = 'submit';
-  createBtn.className = 'btn btn--primary';
-  createBtn.textContent = 'Create';
+  const saveBtn = document.createElement('button');
+  saveBtn.type = 'submit';
+  saveBtn.className = 'btn btn--primary';
+  saveBtn.textContent = 'Save';
 
-  actions.append(cancelBtn, createBtn);
+  actions.append(cancelBtn, saveBtn);
   form.append(field, errorText, actions);
-  panel.append(title, hint, form);
+  panel.append(title, form);
   overlay.appendChild(panel);
   document.body.appendChild(overlay);
 
@@ -65,8 +63,7 @@ export function openNewProjectForm(rerender: () => void): void {
     e.preventDefault();
     const name = nameInput.value.trim();
     if (!name) return;
-    const project = createProject(name);
-    if (!project) {
+    if (!renameProject(project.id, name)) {
       errorText.textContent = 'A project with this name already exists.';
       errorText.hidden = false;
       return;
@@ -76,4 +73,5 @@ export function openNewProjectForm(rerender: () => void): void {
   });
 
   nameInput.focus();
+  nameInput.select();
 }

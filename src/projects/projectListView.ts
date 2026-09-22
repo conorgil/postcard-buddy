@@ -1,6 +1,7 @@
 import { openNewProjectForm } from '../forms/newProjectForm';
+import { openRenameProjectForm } from '../forms/renameProjectForm';
 import { createHelpButton } from '../splash/helpButton';
-import { deleteProject, getVotersForProject, getProjects, renameProject, setActiveProject } from '../storage';
+import { deleteProject, getVotersForProject, getProjects, setActiveProject } from '../storage';
 
 export function renderProjectList(container: HTMLElement, rerender: () => void): void {
   const wrapper = document.createElement('div');
@@ -66,12 +67,7 @@ export function renderProjectList(container: HTMLElement, rerender: () => void):
     const renameBtn = document.createElement('button');
     renameBtn.className = 'btn btn--secondary';
     renameBtn.textContent = 'Rename';
-    renameBtn.addEventListener('click', () => {
-      const name = window.prompt('Rename project:', project.name);
-      if (name === null || !name.trim()) return;
-      renameProject(project.id, name);
-      rerender();
-    });
+    renameBtn.addEventListener('click', () => openRenameProjectForm(project, rerender));
 
     const deleteBtn = document.createElement('button');
     deleteBtn.className = 'btn btn--danger';

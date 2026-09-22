@@ -12,8 +12,10 @@ import {
   normalize,
   redo,
   removeFromSuspectQueue,
+  renameProject,
   undo,
 } from './storage';
+import type { Project } from './types';
 
 class MemoryStorage implements Storage {
   private store = new Map<string, string>();
@@ -42,6 +44,13 @@ globalThis.localStorage = new MemoryStorage();
 beforeEach(() => {
   localStorage.clear();
 });
+
+/** Every test in this file uses a distinct project name, so creation never actually fails. */
+function mustCreateProject(name: string): Project {
+  const project = createProject(name);
+  if (!project) throw new Error(`expected to create project "${name}"`);
+  return project;
+}
 
 describe('normalize', () => {
   it('lowercases, strips punctuation, and collapses whitespace', () => {
@@ -77,7 +86,7 @@ describe('undo', () => {
   });
 
   it('reverts the most recent voter mutation', () => {
-    const project = createProject('Test Project');
+    const project = mustCreateProject('Test Project');
     addVoter(project.id, { name: 'A', street: '1 A St', city: 'X', state: 'NY', zip: '10001' });
     expect(canUndo()).toBe(true);
 
@@ -111,7 +120,7 @@ describe('redo', () => {
   });
 
   it('re-applies an undone mutation', () => {
-    const project = createProject('Redo Project');
+    const project = mustCreateProject('Redo Project');
     const voter = addVoter(project.id, { name: 'C', street: '3 C St', city: 'X', state: 'NY', zip: '10001' });
     deleteVoter(voter.id);
     expect(getVotersForProject(project.id)).toHaveLength(0);
@@ -125,7 +134,7 @@ describe('redo', () => {
   });
 
   it('clears redo history once a new mutation is made after an undo', () => {
-    const project = createProject('Branch Project');
+    const project = mustCreateProject('Branch Project');
     addVoter(project.id, { name: 'D', street: '4 D St', city: 'X', state: 'NY', zip: '10001' });
 
     expect(undo()).toBe(true);
@@ -139,36 +148,55 @@ describe('redo', () => {
 
 describe('suspect queue', () => {
   it('is empty for a project with no pending review lines', () => {
-    const project = createProject('Suspects Project');
+    const project = mustCreateProject('Suspects Project');
     expect(getSuspectQueue(project.id)).toEqual([]);
   });
 
   it('appends new lines and skips exact duplicates already queued', () => {
-    const project = createProject('Dedupe Project');
+    const project = mustCreateProject('Dedupe Project');
     addToSuspectQueue(project.id, ['line one', 'line two']);
     addToSuspectQueue(project.id, ['line two', 'line three']);
     expect(getSuspectQueue(project.id)).toEqual(['line one', 'line two', 'line three']);
   });
 
   it('scopes the queue per project', () => {
-    const a = createProject('Project A');
-    const b = createProject('Project B');
+    const a = mustCreateProject('Project A');
+    const b = mustCreateProject('Project B');
     addToSuspectQueue(a.id, ['only in A']);
     expect(getSuspectQueue(a.id)).toEqual(['only in A']);
     expect(getSuspectQueue(b.id)).toEqual([]);
   });
 
   it('removes one resolved line, leaving the rest queued', () => {
-    const project = createProject('Resolve Project');
+    const project = mustCreateProject('Resolve Project');
     addToSuspectQueue(project.id, ['keep me', 'remove me']);
     removeFromSuspectQueue(project.id, 'remove me');
     expect(getSuspectQueue(project.id)).toEqual(['keep me']);
   });
 
   it('does nothing when removing a line that is not queued', () => {
-    const project = createProject('No-op Project');
+    const project = mustCreateProject('No-op Project');
     addToSuspectQueue(project.id, ['keep me']);
     removeFromSuspectQueue(project.id, 'never queued');
     expect(getSuspectQueue(project.id)).toEqual(['keep me']);
+  });
+});
+
+describe('project name uniqueness', () => {
+  it('rejects creating a project whose name (case-insensitively) already exists', () => {
+    mustCreateProject('Unique Project');
+    expect(createProject('unique project')).toBeNull();
+    expect(createProject('  Unique Project  ')).toBeNull();
+  });
+
+  it('rejects renaming a project to a name another project already uses', () => {
+    mustCreateProject('First Project');
+    const second = mustCreateProject('Second Project');
+    expect(renameProject(second.id, 'first project')).toBe(false);
+  });
+
+  it('allows renaming a project to its own current name', () => {
+    const project = mustCreateProject('Same Name Project');
+    expect(renameProject(project.id, 'Same Name Project')).toBe(true);
   });
 });

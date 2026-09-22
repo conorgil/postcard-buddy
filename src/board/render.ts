@@ -4,7 +4,7 @@ import { openPasteImportForm } from '../forms/pasteImportForm';
 import { openPdfImportForm } from '../forms/pdfImportForm';
 import { openReviewSuspectsForm } from '../forms/reviewSuspectsForm';
 import { createHelpButton } from '../splash/helpButton';
-import { getVotersForProject, getSuspectQueue, setActiveProject } from '../storage';
+import { getVotersForProject, getSuspectQueue, renameProject, setActiveProject } from '../storage';
 import { COLUMN_LABELS, COLUMN_ORDER, type Project } from '../types';
 import { createDropdownButton } from '../ui/dropdownMenu';
 import { createVoterElement } from './voter';
@@ -28,9 +28,73 @@ export function renderBoardView(container: HTMLElement, project: Project, rerend
     rerender();
   });
 
-  const title = document.createElement('h1');
-  title.className = 'board-header__title';
-  title.textContent = project.name;
+  const titleWrap = document.createElement('div');
+  titleWrap.className = 'board-header__title-wrap';
+
+  function showTitleButton(): void {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'board-header__title board-header__title--editable';
+    button.textContent = project.name;
+    button.setAttribute('aria-label', 'Rename project');
+    button.addEventListener('click', showTitleEditor);
+    titleWrap.replaceChildren(button);
+  }
+
+  function showTitleEditor(): void {
+    const form = document.createElement('form');
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'board-header__title-input';
+    input.required = true;
+    input.value = project.name;
+    form.append(input);
+
+    const errorText = document.createElement('p');
+    errorText.className = 'form-error';
+    errorText.hidden = true;
+
+    titleWrap.replaceChildren(form, errorText);
+
+    let cancelled = false;
+
+    function commit(): void {
+      const name = input.value.trim();
+      if (!name || name === project.name) {
+        showTitleButton();
+        return;
+      }
+      if (!renameProject(project.id, name)) {
+        errorText.textContent = 'A project with this name already exists.';
+        errorText.hidden = false;
+        input.focus();
+        return;
+      }
+      rerender();
+    }
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      commit();
+    });
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        cancelled = true;
+        showTitleButton();
+      }
+    });
+
+    input.addEventListener('blur', () => {
+      if (cancelled) return;
+      commit();
+    });
+
+    input.focus();
+    input.select();
+  }
+
+  showTitleButton();
 
   const controls = document.createElement('div');
   controls.className = 'board-header__controls';
@@ -68,7 +132,7 @@ export function renderBoardView(container: HTMLElement, project: Project, rerend
   }
 
   controls.append(createHelpButton());
-  header.append(backLink, title, controls);
+  header.append(backLink, titleWrap, controls);
 
   // --- Columns ---
   const board = document.createElement('div');

@@ -98,8 +98,15 @@ export function setActiveProject(id: string | null): void {
   persistState(state);
 }
 
-export function createProject(name: string): Project {
+function isDuplicateProjectName(projects: Project[], name: string, excludeId?: string): boolean {
+  const key = name.trim().toLowerCase();
+  return projects.some((p) => p.id !== excludeId && p.name.trim().toLowerCase() === key);
+}
+
+/** Returns null if a project with this name (case-insensitive) already exists — project names must be unique. */
+export function createProject(name: string): Project | null {
   const state = loadState();
+  if (isDuplicateProjectName(state.projects, name)) return null;
   const project: Project = {
     id: crypto.randomUUID(),
     name: name.trim(),
@@ -111,12 +118,15 @@ export function createProject(name: string): Project {
   return project;
 }
 
-export function renameProject(id: string, name: string): void {
+/** Returns false if the project doesn't exist or another project already has this name (case-insensitive). */
+export function renameProject(id: string, name: string): boolean {
   const state = loadState();
   const project = state.projects.find((p) => p.id === id);
-  if (!project) return;
+  if (!project) return false;
+  if (isDuplicateProjectName(state.projects, name, id)) return false;
   project.name = name.trim();
   saveState(state);
+  return true;
 }
 
 export function deleteProject(id: string): void {

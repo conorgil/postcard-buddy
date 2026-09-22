@@ -32,7 +32,7 @@ beforeEach(() => {
 
 describe('importPastedText', () => {
   it('imports clean data rows and ignores true noise, with no suspected lines', () => {
-    const project = createProject('Clean Project');
+    const project = createProject('Clean Project')!;
     const result = importPastedText(
       project.id,
       ['1 Sandra Gorrell 14900 Coveshore Dr, Wake Forest, NC 27587', 'page 2 of 26', ''].join('\n'),
@@ -42,7 +42,7 @@ describe('importPastedText', () => {
   });
 
   it('collects lines that look like addresses but have no real City, ST ZIP tail as suspected, without importing them', () => {
-    const project = createProject('Suspect Project');
+    const project = createProject('Suspect Project')!;
     const result = importPastedText(
       project.id,
       [
