@@ -1,5 +1,6 @@
-import { getCardsForProject, moveCard } from '../storage';
-import { COLUMN_ORDER, type Card } from '../types';
+import { getVotersForProject, moveVoter } from '../storage';
+import { COLUMN_LABELS, COLUMN_ORDER, type Voter } from '../types';
+import { showToast } from '../ui/toast';
 
 /**
  * Shrinks every line to the same font size — the smallest size that keeps the
@@ -20,10 +21,10 @@ function shrinkLinesToFit(lines: HTMLElement[]): void {
   }
 }
 
-export function openDetailView(card: Card, projectId: string, rerender: () => void): void {
-  if (card.status === COLUMN_ORDER[0]) {
-    moveCard(card.id, COLUMN_ORDER[1], null);
-    card = { ...card, status: COLUMN_ORDER[1] };
+export function openDetailView(voter: Voter, projectId: string, rerender: () => void): void {
+  if (voter.status === COLUMN_ORDER[0]) {
+    moveVoter(voter.id, COLUMN_ORDER[1], null);
+    voter = { ...voter, status: COLUMN_ORDER[1] };
     rerender();
   }
 
@@ -44,28 +45,47 @@ export function openDetailView(card: Card, projectId: string, rerender: () => vo
 
   const nameLine = document.createElement('div');
   nameLine.className = 'postcard-address__line';
-  nameLine.textContent = card.name;
+  nameLine.textContent = voter.name;
 
   const streetLine = document.createElement('div');
   streetLine.className = 'postcard-address__line';
-  streetLine.textContent = card.street;
+  streetLine.textContent = voter.street;
 
   const cityLine = document.createElement('div');
   cityLine.className = 'postcard-address__line';
-  cityLine.textContent = `${card.city}, ${card.state} ${card.zip}`;
+  cityLine.textContent = `${voter.city}, ${voter.state} ${voter.zip}`;
 
   address.append(nameLine, streetLine, cityLine);
 
-  const columnIndex = COLUMN_ORDER.indexOf(card.status);
+  const columnIndex = COLUMN_ORDER.indexOf(voter.status);
   const isLast = columnIndex === COLUMN_ORDER.length - 1;
+
+  const footer = document.createElement('div');
+  footer.className = 'detail-panel__footer';
+
+  const writingColumn = COLUMN_ORDER[1];
+  const writtenColumn = COLUMN_ORDER[2];
+
+  if (voter.status === writingColumn) {
+    const doneBtn = document.createElement('button');
+    doneBtn.className = 'btn btn--secondary detail-panel__advance';
+    doneBtn.textContent = 'Done';
+    doneBtn.addEventListener('click', () => {
+      moveVoter(voter.id, writtenColumn, null);
+      close();
+      rerender();
+    });
+    footer.append(doneBtn);
+  }
 
   const advanceBtn = document.createElement('button');
   advanceBtn.className = 'btn btn--primary detail-panel__advance';
   advanceBtn.textContent = 'Next voter';
   advanceBtn.disabled = isLast;
   advanceBtn.addEventListener('click', goToNextVoter);
+  footer.append(advanceBtn);
 
-  panel.append(closeBtn, address, advanceBtn);
+  panel.append(closeBtn, address, footer);
   overlay.appendChild(panel);
   document.body.appendChild(overlay);
 
@@ -73,32 +93,33 @@ export function openDetailView(card: Card, projectId: string, rerender: () => vo
 
   function goToNextVoter(): void {
     if (isLast) return;
-    const originalStatus = card.status;
+    const originalStatus = voter.status;
     const nextColumn = COLUMN_ORDER[columnIndex + 1];
-    moveCard(card.id, nextColumn, null);
+    moveVoter(voter.id, nextColumn, null);
+    showToast(`Moved ${voter.name} to ${COLUMN_LABELS[nextColumn]}`, 'success');
 
     // Only the todo/writing stage auto-pulls in the next voter; later
-    // stages (stamping, mailing) just advance the current card.
+    // stages (stamping, mailing) just advance the current voter.
     const todoColumn = COLUMN_ORDER[0];
     const writingColumn = COLUMN_ORDER[1];
     const isWritingStage = originalStatus === todoColumn || originalStatus === writingColumn;
 
-    const nextCard = isWritingStage
-      ? getCardsForProject(projectId)
-          .filter((c) => c.status === todoColumn && c.id !== card.id)
+    const nextVoter = isWritingStage
+      ? getVotersForProject(projectId)
+          .filter((v) => v.status === todoColumn && v.id !== voter.id)
           .sort((a, b) => a.order - b.order)[0]
       : undefined;
 
-    if (nextCard) {
-      moveCard(nextCard.id, writingColumn, null);
+    if (nextVoter) {
+      moveVoter(nextVoter.id, writingColumn, null);
     }
 
     close();
     rerender();
 
-    if (nextCard) {
-      const updatedNextCard = getCardsForProject(projectId).find((c) => c.id === nextCard.id);
-      if (updatedNextCard) openDetailView(updatedNextCard, projectId, rerender);
+    if (nextVoter) {
+      const updatedNextVoter = getVotersForProject(projectId).find((v) => v.id === nextVoter.id);
+      if (updatedNextVoter) openDetailView(updatedNextVoter, projectId, rerender);
     }
   }
 

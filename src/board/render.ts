@@ -1,15 +1,13 @@
 import { exportVoterStatusPdf } from '../export/exportVoterStatusPdf';
-import { openCardForm } from '../forms/cardForm';
+import { openVoterForm } from '../forms/voterForm';
 import { openPasteImportForm } from '../forms/pasteImportForm';
+import { openPdfImportForm } from '../forms/pdfImportForm';
 import { openReviewSuspectsForm } from '../forms/reviewSuspectsForm';
-import { importPdf } from '../pdf/importPdf';
 import { createHelpButton } from '../splash/helpButton';
-import { addToSuspectQueue, getCardsForProject, getSuspectQueue, setActiveProject } from '../storage';
+import { getVotersForProject, getSuspectQueue, setActiveProject } from '../storage';
 import { COLUMN_LABELS, COLUMN_ORDER, type Project } from '../types';
 import { createDropdownButton } from '../ui/dropdownMenu';
-import { formatImportMessage } from '../ui/importMessage';
-import { showToast } from '../ui/toast';
-import { createCardElement } from './card';
+import { createVoterElement } from './voter';
 import { makeColumnDroppable } from './dragDrop';
 import { clearSelection, isSelected, toggleSelectAllInColumn } from './selection';
 
@@ -37,50 +35,28 @@ export function renderBoardView(container: HTMLElement, project: Project, rerend
   const controls = document.createElement('div');
   controls.className = 'board-header__controls';
 
-  const fileInput = document.createElement('input');
-  fileInput.type = 'file';
-  fileInput.accept = 'application/pdf';
-  fileInput.className = 'visually-hidden';
-  fileInput.id = 'pdf-upload-input';
-
-  const importBtn = createDropdownButton('Import voters', [
-    { label: 'Parse a PDF', onSelect: () => fileInput.click() },
-    { label: 'Copy/paste', onSelect: () => openPasteImportForm(project.id, rerender) },
-  ]);
-
-  fileInput.addEventListener('change', async () => {
-    const file = fileInput.files?.[0];
-    if (!file) return;
-    try {
-      const result = await importPdf(project.id, file);
-      showToast(formatImportMessage(result), 'success');
-      addToSuspectQueue(project.id, result.suspectedLines);
-      rerender();
-      if (getSuspectQueue(project.id).length > 0) {
-        openReviewSuspectsForm(project.id, rerender);
-      }
-    } catch (err) {
-      console.error(err);
-      showToast('Could not read this PDF. Please check the file and try again.', 'error');
-    } finally {
-      fileInput.value = '';
-    }
-  });
+  const importBtn = createDropdownButton(
+    'Import voter list...',
+    [
+      { label: '...via PDF', onSelect: () => openPdfImportForm(project.id, rerender) },
+      { label: '...via copy/paste', onSelect: () => openPasteImportForm(project.id, rerender) },
+    ],
+    'primary',
+  );
 
   const addVoterBtn = document.createElement('button');
-  addVoterBtn.className = 'btn btn--primary';
-  addVoterBtn.textContent = '+ Add voter';
-  addVoterBtn.addEventListener('click', () => openCardForm(project.id, rerender));
+  addVoterBtn.className = 'btn btn--secondary';
+  addVoterBtn.textContent = 'Add single voter';
+  addVoterBtn.addEventListener('click', () => openVoterForm(project.id, rerender));
 
   const exportBtn = document.createElement('button');
   exportBtn.className = 'btn btn--secondary';
-  exportBtn.textContent = 'Export voters';
+  exportBtn.textContent = 'Export voter list';
   exportBtn.addEventListener('click', () => {
-    exportVoterStatusPdf(project, getCardsForProject(project.id));
-    showToast('Exported voter status PDF.', 'success');
+    exportVoterStatusPdf(project, getVotersForProject(project.id));
   });
 
-  controls.append(addVoterBtn, importBtn, fileInput, exportBtn);
+  controls.append(importBtn, addVoterBtn, exportBtn);
 
   const pendingSuspects = getSuspectQueue(project.id);
   if (pendingSuspects.length > 0) {
@@ -98,30 +74,30 @@ export function renderBoardView(container: HTMLElement, project: Project, rerend
   const board = document.createElement('div');
   board.className = 'board';
 
-  const cards = getCardsForProject(project.id);
+  const voters = getVotersForProject(project.id);
 
   for (const columnId of COLUMN_ORDER) {
     const column = document.createElement('section');
     column.className = 'column';
     column.dataset.columnId = columnId;
 
-    const columnCards = cards.filter((c) => c.status === columnId).sort((a, b) => a.order - b.order);
-    const columnCardIds = columnCards.map((c) => c.id);
-    const selectedInColumn = columnCardIds.filter((id) => isSelected(id)).length;
+    const columnVoters = voters.filter((v) => v.status === columnId).sort((a, b) => a.order - b.order);
+    const columnVoterIds = columnVoters.map((v) => v.id);
+    const selectedInColumn = columnVoterIds.filter((id) => isSelected(id)).length;
 
     const columnHeader = document.createElement('div');
     columnHeader.className = 'column__header';
 
     const columnLabel = document.createElement('span');
-    columnLabel.textContent = `${COLUMN_LABELS[columnId]} (${columnCards.length})`;
+    columnLabel.textContent = `${COLUMN_LABELS[columnId]} (${columnVoters.length})`;
 
     const selectAllBtn = document.createElement('button');
     selectAllBtn.className = 'column__select-all';
     selectAllBtn.textContent =
       selectedInColumn > 0 ? `${selectedInColumn} selected` : 'Select all';
-    selectAllBtn.disabled = columnCardIds.length === 0;
+    selectAllBtn.disabled = columnVoterIds.length === 0;
     selectAllBtn.addEventListener('click', () => {
-      toggleSelectAllInColumn(columnCardIds);
+      toggleSelectAllInColumn(columnVoterIds);
       rerender();
     });
 
@@ -130,8 +106,8 @@ export function renderBoardView(container: HTMLElement, project: Project, rerend
     const columnBody = document.createElement('div');
     columnBody.className = 'column__body';
 
-    for (const card of columnCards) {
-      columnBody.appendChild(createCardElement(card, project.id, columnCardIds, rerender));
+    for (const voter of columnVoters) {
+      columnBody.appendChild(createVoterElement(voter, project.id, columnVoterIds, rerender));
     }
 
     makeColumnDroppable(columnBody, columnId, rerender);

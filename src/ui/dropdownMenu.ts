@@ -3,13 +3,17 @@ export interface DropdownOption {
   onSelect: () => void;
 }
 
-export function createDropdownButton(buttonLabel: string, options: DropdownOption[]): HTMLElement {
+export function createDropdownButton(
+  buttonLabel: string,
+  options: DropdownOption[],
+  variant: 'primary' | 'secondary' = 'secondary',
+): HTMLElement {
   const wrapper = document.createElement('div');
   wrapper.className = 'dropdown';
 
   const toggleBtn = document.createElement('button');
   toggleBtn.type = 'button';
-  toggleBtn.className = 'btn btn--secondary';
+  toggleBtn.className = `btn btn--${variant}`;
   toggleBtn.textContent = buttonLabel;
 
   const menu = document.createElement('div');

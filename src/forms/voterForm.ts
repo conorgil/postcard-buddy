@@ -1,5 +1,5 @@
-import { addCard, updateCard } from '../storage';
-import type { Card } from '../types';
+import { addVoter, updateVoter } from '../storage';
+import type { Voter } from '../types';
 
 function field(label: string, value: string): { wrapper: HTMLLabelElement; input: HTMLInputElement } {
   const wrapper = document.createElement('label');
@@ -14,7 +14,7 @@ function field(label: string, value: string): { wrapper: HTMLLabelElement; input
   return { wrapper, input };
 }
 
-export function openCardForm(projectId: string, rerender: () => void, existing?: Card): void {
+export function openVoterForm(projectId: string, rerender: () => void, existing?: Voter): void {
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
 
@@ -22,7 +22,7 @@ export function openCardForm(projectId: string, rerender: () => void, existing?:
   panel.className = 'panel form-panel';
 
   const title = document.createElement('h2');
-  title.textContent = existing ? 'Edit card' : 'Add card';
+  title.textContent = existing ? 'Edit voter' : 'Add voter';
 
   const form = document.createElement('form');
 
@@ -44,7 +44,7 @@ export function openCardForm(projectId: string, rerender: () => void, existing?:
   const saveBtn = document.createElement('button');
   saveBtn.type = 'submit';
   saveBtn.className = 'btn btn--primary';
-  saveBtn.textContent = existing ? 'Save changes' : 'Add card';
+  saveBtn.textContent = existing ? 'Save changes' : 'Add voter';
 
   actions.append(cancelBtn, saveBtn);
   form.append(
@@ -83,9 +83,9 @@ export function openCardForm(projectId: string, rerender: () => void, existing?:
       zip: zipField.input.value,
     };
     if (existing) {
-      updateCard(existing.id, input);
+      updateVoter(existing.id, input);
     } else {
-      addCard(projectId, input);
+      addVoter(projectId, input);
     }
     close();
     rerender();

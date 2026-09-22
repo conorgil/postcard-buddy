@@ -1,5 +1,5 @@
-import { addCards, dedupeKey, getCardsForProject } from '../storage';
-import type { Card } from '../types';
+import { addVoters, dedupeKey, getVotersForProject } from '../storage';
+import type { Voter } from '../types';
 import { extractAllLines } from './extractLines';
 import { looksLikeDataRow, looksLikeSuspectedAddress, parseVoterLine, type ParsedRecord } from './parseVoterLine';
 
@@ -17,15 +17,15 @@ export function importRecords(
   skippedCount = 0,
   suspectedLines: string[] = [],
 ): ImportResult {
-  const existingCards = getCardsForProject(projectId);
+  const existingVoters = getVotersForProject(projectId);
   const existingKeys = new Set(
-    existingCards.map((c) => dedupeKey(projectId, c.name, c.street, c.city, c.state, c.zip)),
+    existingVoters.map((v) => dedupeKey(projectId, v.name, v.street, v.city, v.state, v.zip)),
   );
 
   let nextOrder =
-    existingCards.filter((c) => c.status === 'todo').reduce((max, c) => Math.max(max, c.order), -1) + 1;
+    existingVoters.filter((v) => v.status === 'todo').reduce((max, v) => Math.max(max, v.order), -1) + 1;
 
-  const newCards: Card[] = [];
+  const newVoters: Voter[] = [];
   let imported = 0;
   let duplicates = 0;
 
@@ -37,7 +37,7 @@ export function importRecords(
     }
     existingKeys.add(key);
 
-    newCards.push({
+    newVoters.push({
       id: crypto.randomUUID(),
       projectId,
       name: record.name,
@@ -52,7 +52,7 @@ export function importRecords(
     imported++;
   }
 
-  addCards(newCards);
+  addVoters(newVoters);
 
   return { importedCount: imported, duplicateCount: duplicates, skippedCount, suspectedLines };
 }

@@ -1,9 +1,9 @@
-import type { Card, ColumnId, Project, StoredState } from './types';
+import type { ColumnId, Project, StoredState, Voter } from './types';
 
 const STORAGE_KEY = 'hello-fellow-voter:v1';
 
 function emptyState(): StoredState {
-  return { version: 1, projects: [], activeProjectId: null, cards: [], suspectQueues: {} };
+  return { version: 1, projects: [], activeProjectId: null, voters: [], suspectQueues: {} };
 }
 
 function loadState(): StoredState {
@@ -17,6 +17,12 @@ function loadState(): StoredState {
     }
     // Older stored state predates the suspect-address review queue.
     if (!parsed.suspectQueues) parsed.suspectQueues = {};
+    // Older stored state kept voters under the field name "cards".
+    if (!parsed.voters && Array.isArray(parsed.cards)) {
+      parsed.voters = parsed.cards;
+      delete parsed.cards;
+    }
+    if (!parsed.voters) parsed.voters = [];
     return parsed as StoredState;
   } catch (err) {
     console.warn('hello-fellow-voter: failed to parse stored state, resetting', err);
@@ -116,23 +122,23 @@ export function renameProject(id: string, name: string): void {
 export function deleteProject(id: string): void {
   const state = loadState();
   state.projects = state.projects.filter((p) => p.id !== id);
-  state.cards = state.cards.filter((c) => c.projectId !== id);
+  state.voters = state.voters.filter((v) => v.projectId !== id);
   if (state.activeProjectId === id) state.activeProjectId = null;
   saveState(state);
 }
 
-// --- Cards ---
+// --- Voters ---
 
-export function getCardsForProject(projectId: string): Card[] {
-  return loadState().cards.filter((c) => c.projectId === projectId);
+export function getVotersForProject(projectId: string): Voter[] {
+  return loadState().voters.filter((v) => v.projectId === projectId);
 }
 
-function nextOrderInColumn(cards: Card[], projectId: string, status: ColumnId): number {
-  const columnCards = cards.filter((c) => c.projectId === projectId && c.status === status);
-  return columnCards.length === 0 ? 0 : Math.max(...columnCards.map((c) => c.order)) + 1;
+function nextOrderInColumn(voters: Voter[], projectId: string, status: ColumnId): number {
+  const columnVoters = voters.filter((v) => v.projectId === projectId && v.status === status);
+  return columnVoters.length === 0 ? 0 : Math.max(...columnVoters.map((v) => v.order)) + 1;
 }
 
-export interface NewCardInput {
+export interface NewVoterInput {
   name: string;
   street: string;
   city: string;
@@ -140,9 +146,9 @@ export interface NewCardInput {
   zip: string;
 }
 
-export function addCard(projectId: string, input: NewCardInput): Card {
+export function addVoter(projectId: string, input: NewVoterInput): Voter {
   const state = loadState();
-  const card: Card = {
+  const voter: Voter = {
     id: crypto.randomUUID(),
     projectId,
     name: input.name.trim(),
@@ -151,87 +157,87 @@ export function addCard(projectId: string, input: NewCardInput): Card {
     state: input.state.trim(),
     zip: input.zip.trim(),
     status: 'todo',
-    order: nextOrderInColumn(state.cards, projectId, 'todo'),
+    order: nextOrderInColumn(state.voters, projectId, 'todo'),
     createdAt: new Date().toISOString(),
   };
-  state.cards.push(card);
+  state.voters.push(voter);
   saveState(state);
-  return card;
+  return voter;
 }
 
-/** Bulk-append pre-built cards (used by PDF import) in a single load/save cycle. */
-export function addCards(cards: Card[]): void {
-  if (cards.length === 0) return;
+/** Bulk-append pre-built voters (used by PDF import) in a single load/save cycle. */
+export function addVoters(voters: Voter[]): void {
+  if (voters.length === 0) return;
   const state = loadState();
-  state.cards.push(...cards);
-  saveState(state);
-}
-
-export function updateCard(id: string, patch: NewCardInput): void {
-  const state = loadState();
-  const card = state.cards.find((c) => c.id === id);
-  if (!card) return;
-  card.name = patch.name.trim();
-  card.street = patch.street.trim();
-  card.city = patch.city.trim();
-  card.state = patch.state.trim();
-  card.zip = patch.zip.trim();
+  state.voters.push(...voters);
   saveState(state);
 }
 
-export function deleteCard(id: string): void {
+export function updateVoter(id: string, patch: NewVoterInput): void {
   const state = loadState();
-  state.cards = state.cards.filter((c) => c.id !== id);
+  const voter = state.voters.find((v) => v.id === id);
+  if (!voter) return;
+  voter.name = patch.name.trim();
+  voter.street = patch.street.trim();
+  voter.city = patch.city.trim();
+  voter.state = patch.state.trim();
+  voter.zip = patch.zip.trim();
   saveState(state);
 }
 
-/** Moves a card to a new column, optionally inserting before another card in that column. */
-export function moveCard(cardId: string, newStatus: ColumnId, insertBeforeCardId: string | null): void {
+export function deleteVoter(id: string): void {
   const state = loadState();
-  const card = state.cards.find((c) => c.id === cardId);
-  if (!card) return;
+  state.voters = state.voters.filter((v) => v.id !== id);
+  saveState(state);
+}
 
-  card.status = newStatus;
+/** Moves a voter to a new column, optionally inserting before another voter in that column. */
+export function moveVoter(voterId: string, newStatus: ColumnId, insertBeforeVoterId: string | null): void {
+  const state = loadState();
+  const voter = state.voters.find((v) => v.id === voterId);
+  if (!voter) return;
 
-  const columnCards = state.cards
-    .filter((c) => c.projectId === card.projectId && c.status === newStatus && c.id !== cardId)
+  voter.status = newStatus;
+
+  const columnVoters = state.voters
+    .filter((v) => v.projectId === voter.projectId && v.status === newStatus && v.id !== voterId)
     .sort((a, b) => a.order - b.order);
 
-  const insertIndex = insertBeforeCardId
-    ? columnCards.findIndex((c) => c.id === insertBeforeCardId)
+  const insertIndex = insertBeforeVoterId
+    ? columnVoters.findIndex((v) => v.id === insertBeforeVoterId)
     : -1;
 
   if (insertIndex === -1) {
-    columnCards.push(card);
+    columnVoters.push(voter);
   } else {
-    columnCards.splice(insertIndex, 0, card);
+    columnVoters.splice(insertIndex, 0, voter);
   }
 
-  columnCards.forEach((c, i) => {
-    c.order = i;
+  columnVoters.forEach((v, i) => {
+    v.order = i;
   });
 
   saveState(state);
 }
 
-/** Moves multiple cards to a new column in one load/save cycle, preserving their relative order. */
-export function moveCards(cardIds: string[], newStatus: ColumnId): void {
+/** Moves multiple voters to a new column in one load/save cycle, preserving their relative order. */
+export function moveVoters(voterIds: string[], newStatus: ColumnId): void {
   const state = loadState();
-  const idSet = new Set(cardIds);
-  const movingCards = state.cards.filter((c) => idSet.has(c.id));
-  if (movingCards.length === 0) return;
+  const idSet = new Set(voterIds);
+  const movingVoters = state.voters.filter((v) => idSet.has(v.id));
+  if (movingVoters.length === 0) return;
 
-  const projectId = movingCards[0].projectId;
-  const existingColumnCards = state.cards
-    .filter((c) => c.projectId === projectId && c.status === newStatus && !idSet.has(c.id))
+  const projectId = movingVoters[0].projectId;
+  const existingColumnVoters = state.voters
+    .filter((v) => v.projectId === projectId && v.status === newStatus && !idSet.has(v.id))
     .sort((a, b) => a.order - b.order);
 
-  for (const card of movingCards) {
-    card.status = newStatus;
+  for (const voter of movingVoters) {
+    voter.status = newStatus;
   }
 
-  [...existingColumnCards, ...movingCards].forEach((c, i) => {
-    c.order = i;
+  [...existingColumnVoters, ...movingVoters].forEach((v, i) => {
+    v.order = i;
   });
 
   saveState(state);
@@ -285,5 +291,13 @@ export function removeFromSuspectQueue(projectId: string, line: string): void {
   const existing = state.suspectQueues[projectId];
   if (!existing) return;
   state.suspectQueues[projectId] = existing.filter((l) => l !== line);
+  saveState(state);
+}
+
+/** Empties a project's review queue in one write, e.g. after a bulk "add all"/"discard all" action. */
+export function clearSuspectQueue(projectId: string): void {
+  const state = loadState();
+  if (!state.suspectQueues[projectId]?.length) return;
+  state.suspectQueues[projectId] = [];
   saveState(state);
 }

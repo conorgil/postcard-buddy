@@ -16,18 +16,17 @@ export function openPasteImportForm(projectId: string, rerender: () => void): vo
 
   const hint = document.createElement('p');
   hint.className = 'paste-import-hint';
-  hint.textContent = 'Enter one voter per line, e.g. "Sandra Gorrell 14900 Coveshore Dr, Wake Forest, NC 27587".';
+  hint.textContent = 'Enter one voter per line, e.g. "Voter Name, Street address, City, State, ZIP".';
 
   const form = document.createElement('form');
 
   const textareaField = document.createElement('label');
   textareaField.className = 'form-field';
-  const textareaLabel = document.createElement('span');
-  textareaLabel.textContent = 'Voters';
+
   const textarea = document.createElement('textarea');
   textarea.className = 'paste-import-textarea';
   textarea.required = true;
-  textareaField.append(textareaLabel, textarea);
+  textareaField.append(textarea);
 
   const actions = document.createElement('div');
   actions.className = 'form-actions';

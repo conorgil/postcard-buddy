@@ -24,7 +24,7 @@ export function openSplash(offerPermanentDismiss = true): void {
   if (offerPermanentDismiss) {
     const dismissBtn = document.createElement('button');
     dismissBtn.className = 'btn btn--primary';
-    dismissBtn.textContent = 'Dismiss';
+    dismissBtn.textContent = 'Get started!';
     dismissBtn.addEventListener('click', close);
 
     const neverShowBtn = document.createElement('button');
@@ -39,7 +39,7 @@ export function openSplash(offerPermanentDismiss = true): void {
   } else {
     const dismissBtn = document.createElement('button');
     dismissBtn.className = 'btn btn--primary';
-    dismissBtn.textContent = 'Dismiss';
+    dismissBtn.textContent = 'Get started!';
     dismissBtn.addEventListener('click', close);
 
     actions.append(dismissBtn);

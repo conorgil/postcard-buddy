@@ -14,5 +14,5 @@ export function showToast(message: string, kind: ToastKind): void {
   toast.appendChild(close);
 
   document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 6000);
+  setTimeout(() => toast.remove(), 3000);
 }

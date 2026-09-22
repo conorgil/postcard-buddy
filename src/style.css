@@ -229,7 +229,7 @@ button {
   gap: 0.5rem;
 }
 
-.card {
+.voter-card {
   background: var(--color-panel);
   border: 1px solid var(--color-border);
   border-radius: 8px;
@@ -238,20 +238,20 @@ button {
   position: relative;
 }
 
-.card:focus-visible {
+.voter-card:focus-visible {
   outline: 2px solid var(--color-primary);
 }
 
-.card.dragging {
+.voter-card.dragging {
   opacity: 0.5;
 }
 
-.card--selected {
+.voter-card--selected {
   border-color: var(--color-primary);
   background: #eff6ff;
 }
 
-.card__select {
+.voter-card__select {
   position: absolute;
   top: 0.5rem;
   left: 0.5rem;
@@ -259,13 +259,13 @@ button {
   cursor: pointer;
 }
 
-.card__name {
+.voter-card__name {
   font-weight: 600;
   padding-left: 1.5rem;
   padding-right: 3rem;
 }
 
-.card__address {
+.voter-card__address {
   font-size: 0.85rem;
   color: var(--color-text-muted);
   overflow: hidden;
@@ -275,7 +275,7 @@ button {
   padding-right: 3rem;
 }
 
-.card__controls {
+.voter-card__controls {
   position: absolute;
   top: 0.4rem;
   right: 0.4rem;
@@ -297,7 +297,7 @@ button {
   white-space: nowrap;
 }
 
-.card__icon-btn {
+.voter-card__icon-btn {
   border: none;
   background: transparent;
   cursor: pointer;
@@ -307,7 +307,7 @@ button {
   padding: 0.15rem 0.3rem;
   border-radius: 4px;
 }
-.card__icon-btn:hover {
+.voter-card__icon-btn:hover {
   background: #f0f1f3;
   color: var(--color-text);
 }
@@ -375,8 +375,13 @@ button {
   white-space: nowrap;
 }
 
+.detail-panel__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
 .detail-panel__advance {
-  align-self: flex-end;
   font-size: 1.1rem;
   padding: 0.75rem 1.5rem;
 }
@@ -522,6 +527,40 @@ button {
 
 .paste-import-panel {
   width: min(560px, 90vw);
+}
+
+.pdf-import-panel {
+  width: min(480px, 90vw);
+}
+
+.pdf-drop-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 2.5rem 1.5rem;
+  margin-bottom: 1.5rem;
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  text-align: center;
+}
+
+.pdf-drop-zone--active {
+  border-color: var(--color-primary);
+  background: #eef2ff;
+}
+
+.pdf-drop-zone__text {
+  font-weight: 500;
+  margin: 0;
+}
+
+.pdf-drop-zone__or {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  margin: 0;
 }
 
 .paste-import-hint {

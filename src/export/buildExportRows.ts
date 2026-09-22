@@ -1,4 +1,4 @@
-import { COLUMN_LABELS, COLUMN_ORDER, type Card } from '../types';
+import { COLUMN_LABELS, COLUMN_ORDER, type Voter } from '../types';
 
 export interface ExportRow {
   name: string;
@@ -10,30 +10,30 @@ export interface ExportRow {
 }
 
 /** Sorts by board column order (todo → mailed), then alphabetically by name within each status. */
-export function buildExportRows(cards: Card[]): ExportRow[] {
-  return [...cards]
+export function buildExportRows(voters: Voter[]): ExportRow[] {
+  return [...voters]
     .sort((a, b) => {
       const statusDiff = COLUMN_ORDER.indexOf(a.status) - COLUMN_ORDER.indexOf(b.status);
       return statusDiff !== 0 ? statusDiff : a.name.localeCompare(b.name);
     })
-    .map((card) => ({
-      name: card.name,
-      street: card.street,
-      city: card.city,
-      state: card.state,
-      zip: card.zip,
-      status: COLUMN_LABELS[card.status],
+    .map((voter) => ({
+      name: voter.name,
+      street: voter.street,
+      city: voter.city,
+      state: voter.state,
+      zip: voter.zip,
+      status: COLUMN_LABELS[voter.status],
     }));
 }
 
 /** e.g. "500 voters — 210 mailed, 150 stamped, 80 written, 40 writing, 20 todo" */
-export function summarizeByStatus(cards: Card[]): string {
-  const total = `${cards.length} voter${cards.length === 1 ? '' : 's'}`;
-  if (cards.length === 0) return total;
+export function summarizeByStatus(voters: Voter[]): string {
+  const total = `${voters.length} voter${voters.length === 1 ? '' : 's'}`;
+  if (voters.length === 0) return total;
 
   const counts = new Map<string, number>();
-  for (const card of cards) {
-    counts.set(card.status, (counts.get(card.status) ?? 0) + 1);
+  for (const voter of voters) {
+    counts.set(voter.status, (counts.get(voter.status) ?? 0) + 1);
   }
 
   const parts = COLUMN_ORDER.filter((status) => (counts.get(status) ?? 0) > 0).map(

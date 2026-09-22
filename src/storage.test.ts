@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
-  addCard,
+  addVoter,
   addToSuspectQueue,
   canRedo,
   canUndo,
   createProject,
   dedupeKey,
-  deleteCard,
-  getCardsForProject,
+  deleteVoter,
+  getVotersForProject,
   getSuspectQueue,
   normalize,
   redo,
@@ -76,19 +76,19 @@ describe('undo', () => {
     expect(canUndo()).toBe(false);
   });
 
-  it('reverts the most recent card mutation', () => {
+  it('reverts the most recent voter mutation', () => {
     const project = createProject('Test Project');
-    addCard(project.id, { name: 'A', street: '1 A St', city: 'X', state: 'NY', zip: '10001' });
+    addVoter(project.id, { name: 'A', street: '1 A St', city: 'X', state: 'NY', zip: '10001' });
     expect(canUndo()).toBe(true);
 
-    const card = addCard(project.id, { name: 'B', street: '2 B St', city: 'X', state: 'NY', zip: '10001' });
-    expect(getCardsForProject(project.id)).toHaveLength(2);
+    const voter = addVoter(project.id, { name: 'B', street: '2 B St', city: 'X', state: 'NY', zip: '10001' });
+    expect(getVotersForProject(project.id)).toHaveLength(2);
 
-    deleteCard(card.id);
-    expect(getCardsForProject(project.id)).toHaveLength(1);
+    deleteVoter(voter.id);
+    expect(getVotersForProject(project.id)).toHaveLength(1);
 
     expect(undo()).toBe(true);
-    expect(getCardsForProject(project.id).map((c) => c.name).sort()).toEqual(['A', 'B']);
+    expect(getVotersForProject(project.id).map((v) => v.name).sort()).toEqual(['A', 'B']);
   });
 
   it('returns false when the undo history is exhausted', () => {
@@ -112,26 +112,26 @@ describe('redo', () => {
 
   it('re-applies an undone mutation', () => {
     const project = createProject('Redo Project');
-    const card = addCard(project.id, { name: 'C', street: '3 C St', city: 'X', state: 'NY', zip: '10001' });
-    deleteCard(card.id);
-    expect(getCardsForProject(project.id)).toHaveLength(0);
+    const voter = addVoter(project.id, { name: 'C', street: '3 C St', city: 'X', state: 'NY', zip: '10001' });
+    deleteVoter(voter.id);
+    expect(getVotersForProject(project.id)).toHaveLength(0);
 
     expect(undo()).toBe(true);
-    expect(getCardsForProject(project.id)).toHaveLength(1);
+    expect(getVotersForProject(project.id)).toHaveLength(1);
     expect(canRedo()).toBe(true);
 
     expect(redo()).toBe(true);
-    expect(getCardsForProject(project.id)).toHaveLength(0);
+    expect(getVotersForProject(project.id)).toHaveLength(0);
   });
 
   it('clears redo history once a new mutation is made after an undo', () => {
     const project = createProject('Branch Project');
-    addCard(project.id, { name: 'D', street: '4 D St', city: 'X', state: 'NY', zip: '10001' });
+    addVoter(project.id, { name: 'D', street: '4 D St', city: 'X', state: 'NY', zip: '10001' });
 
     expect(undo()).toBe(true);
     expect(canRedo()).toBe(true);
 
-    addCard(project.id, { name: 'E', street: '5 E St', city: 'X', state: 'NY', zip: '10001' });
+    addVoter(project.id, { name: 'E', street: '5 E St', city: 'X', state: 'NY', zip: '10001' });
     expect(canRedo()).toBe(false);
     expect(redo()).toBe(false);
   });

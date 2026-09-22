@@ -64,7 +64,7 @@ function splitByCommaHeuristic(beforeTail: string): { name: string; street: stri
  * tail. Tries both known name/street conventions; if neither confidently
  * applies (an export format we haven't seen), keeps the whole prefix as the
  * name rather than silently dropping what is still a real address — the
- * caller can fix up a garbled name in the UI, but can't recover a card that
+ * caller can fix up a garbled name in the UI, but can't recover a voter that
  * was never imported at all.
  */
 function buildRecord(beforeTail: string, city: string, state: string, zip: string): ParsedRecord | null {

@@ -1,5 +1,5 @@
-import { moveCard, moveCards } from '../storage';
-import type { Card, ColumnId } from '../types';
+import { moveVoter, moveVoters } from '../storage';
+import type { ColumnId, Voter } from '../types';
 import { clearSelection, getSelectedCount, getSelectedIds, isSelected } from './selection';
 
 function createGroupDragPreview(count: number): HTMLElement {
@@ -10,14 +10,14 @@ function createGroupDragPreview(count: number): HTMLElement {
   return preview;
 }
 
-export function makeCardDraggable(el: HTMLElement, card: Card): void {
+export function makeVoterDraggable(el: HTMLElement, voter: Voter): void {
   el.addEventListener('dragstart', (e) => {
-    e.dataTransfer?.setData('text/plain', card.id);
+    e.dataTransfer?.setData('text/plain', voter.id);
     if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
     el.classList.add('dragging');
 
     const selectedCount = getSelectedCount();
-    if (e.dataTransfer && isSelected(card.id) && selectedCount > 1) {
+    if (e.dataTransfer && isSelected(voter.id) && selectedCount > 1) {
       const preview = createGroupDragPreview(selectedCount);
       e.dataTransfer.setDragImage(preview, preview.offsetWidth / 2, preview.offsetHeight / 2);
       setTimeout(() => preview.remove(), 0);
@@ -26,12 +26,12 @@ export function makeCardDraggable(el: HTMLElement, card: Card): void {
   el.addEventListener('dragend', () => el.classList.remove('dragging'));
 }
 
-function findInsertBeforeId(columnBody: HTMLElement, clientY: number): string | null {
-  const cardEls = [...columnBody.querySelectorAll<HTMLElement>('.card')];
-  for (const cardEl of cardEls) {
-    const rect = cardEl.getBoundingClientRect();
+function findInsertBeforeVoterId(columnBody: HTMLElement, clientY: number): string | null {
+  const voterEls = [...columnBody.querySelectorAll<HTMLElement>('.voter-card')];
+  for (const voterEl of voterEls) {
+    const rect = voterEl.getBoundingClientRect();
     if (clientY < rect.top + rect.height / 2) {
-      return cardEl.dataset.cardId ?? null;
+      return voterEl.dataset.voterId ?? null;
     }
   }
   return null;
@@ -45,14 +45,14 @@ export function makeColumnDroppable(columnBody: HTMLElement, columnId: ColumnId,
 
   columnBody.addEventListener('drop', (e) => {
     e.preventDefault();
-    const cardId = e.dataTransfer?.getData('text/plain');
-    if (!cardId) return;
-    if (isSelected(cardId) && getSelectedCount() > 1) {
-      moveCards(getSelectedIds(), columnId);
+    const voterId = e.dataTransfer?.getData('text/plain');
+    if (!voterId) return;
+    if (isSelected(voterId) && getSelectedCount() > 1) {
+      moveVoters(getSelectedIds(), columnId);
       clearSelection();
     } else {
-      const insertBeforeId = findInsertBeforeId(columnBody, e.clientY);
-      moveCard(cardId, columnId, insertBeforeId);
+      const insertBeforeId = findInsertBeforeVoterId(columnBody, e.clientY);
+      moveVoter(voterId, columnId, insertBeforeId);
     }
     rerender();
   });

@@ -1,5 +1,5 @@
 import { createHelpButton } from '../splash/helpButton';
-import { createProject, deleteProject, getCardsForProject, getProjects, renameProject, setActiveProject } from '../storage';
+import { createProject, deleteProject, getVotersForProject, getProjects, renameProject, setActiveProject } from '../storage';
 
 export function renderProjectList(container: HTMLElement, rerender: () => void): void {
   const wrapper = document.createElement('div');
@@ -36,7 +36,7 @@ export function renderProjectList(container: HTMLElement, rerender: () => void):
   }
 
   for (const project of projects) {
-    const cardCount = getCardsForProject(project.id).length;
+    const voterCount = getVotersForProject(project.id).length;
 
     const row = document.createElement('div');
     row.className = 'project-row';
@@ -50,7 +50,7 @@ export function renderProjectList(container: HTMLElement, rerender: () => void):
 
     const meta = document.createElement('div');
     meta.className = 'project-row__meta';
-    meta.textContent = `${cardCount} card${cardCount === 1 ? '' : 's'} · created ${new Date(
+    meta.textContent = `${voterCount} voter${voterCount === 1 ? '' : 's'} · created ${new Date(
       project.createdAt,
     ).toLocaleDateString()}`;
 
@@ -82,7 +82,7 @@ export function renderProjectList(container: HTMLElement, rerender: () => void):
     deleteBtn.textContent = 'Delete';
     deleteBtn.addEventListener('click', () => {
       const confirmed = window.confirm(
-        `Delete "${project.name}" and all ${cardCount} of its cards? This can't be undone.`,
+        `Delete "${project.name}" and all ${voterCount} of its voters? This can't be undone.`,
       );
       if (!confirmed) return;
       deleteProject(project.id);

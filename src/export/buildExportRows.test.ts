@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { Card } from '../types';
+import type { Voter } from '../types';
 import { buildExportRows, summarizeByStatus } from './buildExportRows';
 
-function makeCard(overrides: Partial<Card>): Card {
+function makeVoter(overrides: Partial<Voter>): Voter {
   return {
     id: overrides.id ?? 'id',
     projectId: 'project-1',
@@ -20,14 +20,14 @@ function makeCard(overrides: Partial<Card>): Card {
 
 describe('buildExportRows', () => {
   it('groups by status in board order, then alphabetically by name within each group', () => {
-    const cards: Card[] = [
-      makeCard({ id: '1', name: 'Zeke Mailed', status: 'mailed' }),
-      makeCard({ id: '2', name: 'Bob Todo', status: 'todo' }),
-      makeCard({ id: '3', name: 'Amy Todo', status: 'todo' }),
-      makeCard({ id: '4', name: 'Cara Writing', status: 'writing' }),
+    const voters: Voter[] = [
+      makeVoter({ id: '1', name: 'Zeke Mailed', status: 'mailed' }),
+      makeVoter({ id: '2', name: 'Bob Todo', status: 'todo' }),
+      makeVoter({ id: '3', name: 'Amy Todo', status: 'todo' }),
+      makeVoter({ id: '4', name: 'Cara Writing', status: 'writing' }),
     ];
 
-    expect(buildExportRows(cards).map((r) => r.name)).toEqual([
+    expect(buildExportRows(voters).map((r) => r.name)).toEqual([
       'Amy Todo',
       'Bob Todo',
       'Cara Writing',
@@ -36,20 +36,20 @@ describe('buildExportRows', () => {
   });
 
   it('maps status to the existing COLUMN_LABELS strings', () => {
-    const cards: Card[] = [
-      makeCard({ id: '1', status: 'stamped' }),
-      makeCard({ id: '2', status: 'mailed' }),
+    const voters: Voter[] = [
+      makeVoter({ id: '1', status: 'stamped' }),
+      makeVoter({ id: '2', status: 'mailed' }),
     ];
 
-    expect(buildExportRows(cards).map((r) => r.status)).toEqual(['Stamp Applied', 'Mailed']);
+    expect(buildExportRows(voters).map((r) => r.status)).toEqual(['Stamp Applied', 'Mailed']);
   });
 
   it('carries through address fields unchanged', () => {
-    const cards: Card[] = [
-      makeCard({ id: '1', street: '456 Oak Ave', city: 'Metropolis', state: 'NY', zip: '10001' }),
+    const voters: Voter[] = [
+      makeVoter({ id: '1', street: '456 Oak Ave', city: 'Metropolis', state: 'NY', zip: '10001' }),
     ];
 
-    expect(buildExportRows(cards)[0]).toEqual({
+    expect(buildExportRows(voters)[0]).toEqual({
       name: 'Jane Doe',
       street: '456 Oak Ave',
       city: 'Metropolis',
@@ -60,35 +60,35 @@ describe('buildExportRows', () => {
   });
 
   it('does not mutate the input array', () => {
-    const cards: Card[] = [
-      makeCard({ id: '1', name: 'Zeke', status: 'mailed' }),
-      makeCard({ id: '2', name: 'Amy', status: 'todo' }),
+    const voters: Voter[] = [
+      makeVoter({ id: '1', name: 'Zeke', status: 'mailed' }),
+      makeVoter({ id: '2', name: 'Amy', status: 'todo' }),
     ];
-    const original = [...cards];
+    const original = [...voters];
 
-    buildExportRows(cards);
+    buildExportRows(voters);
 
-    expect(cards).toEqual(original);
+    expect(voters).toEqual(original);
   });
 });
 
 describe('summarizeByStatus', () => {
-  it('handles an empty card list', () => {
+  it('handles an empty voter list', () => {
     expect(summarizeByStatus([])).toBe('0 voters');
   });
 
-  it('uses singular "voter" for exactly one card', () => {
-    expect(summarizeByStatus([makeCard({ status: 'todo' })])).toBe('1 voter — 1 todo');
+  it('uses singular "voter" for exactly one voter', () => {
+    expect(summarizeByStatus([makeVoter({ status: 'todo' })])).toBe('1 voter — 1 todo');
   });
 
   it('summarizes counts per status in board order, omitting zero-count statuses', () => {
-    const cards: Card[] = [
-      makeCard({ id: '1', status: 'mailed' }),
-      makeCard({ id: '2', status: 'mailed' }),
-      makeCard({ id: '3', status: 'todo' }),
-      makeCard({ id: '4', status: 'stamped' }),
+    const voters: Voter[] = [
+      makeVoter({ id: '1', status: 'mailed' }),
+      makeVoter({ id: '2', status: 'mailed' }),
+      makeVoter({ id: '3', status: 'todo' }),
+      makeVoter({ id: '4', status: 'stamped' }),
     ];
 
-    expect(summarizeByStatus(cards)).toBe('4 voters — 1 todo, 1 stamp applied, 2 mailed');
+    expect(summarizeByStatus(voters)).toBe('4 voters — 1 todo, 1 stamp applied, 2 mailed');
   });
 });

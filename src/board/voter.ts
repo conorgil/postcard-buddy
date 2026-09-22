@@ -1,8 +1,8 @@
 import { openDetailView } from '../detail/detailView';
-import { openCardForm } from '../forms/cardForm';
-import { deleteCard, moveCard, moveCards } from '../storage';
-import { COLUMN_ORDER, type Card } from '../types';
-import { makeCardDraggable } from './dragDrop';
+import { openVoterForm } from '../forms/voterForm';
+import { deleteVoter, moveVoter, moveVoters } from '../storage';
+import { COLUMN_ORDER, type Voter } from '../types';
+import { makeVoterDraggable } from './dragDrop';
 import {
   clearSelection,
   getSelectedCount,
@@ -13,66 +13,66 @@ import {
   toggleSelect,
 } from './selection';
 
-export function createCardElement(
-  card: Card,
+export function createVoterElement(
+  voter: Voter,
   projectId: string,
-  columnCardIds: string[],
+  columnVoterIds: string[],
   rerender: () => void,
 ): HTMLElement {
   const el = document.createElement('div');
-  el.className = 'card';
-  if (isSelected(card.id)) el.classList.add('card--selected');
+  el.className = 'voter-card';
+  if (isSelected(voter.id)) el.classList.add('voter-card--selected');
   el.draggable = true;
   el.tabIndex = 0;
   el.setAttribute('role', 'button');
-  el.dataset.cardId = card.id;
-  el.setAttribute('aria-label', `${card.name}, ${card.street}, ${card.city}, ${card.state} ${card.zip}`);
+  el.dataset.voterId = voter.id;
+  el.setAttribute('aria-label', `${voter.name}, ${voter.street}, ${voter.city}, ${voter.state} ${voter.zip}`);
 
   const select = document.createElement('input');
   select.type = 'checkbox';
-  select.className = 'card__select';
-  select.checked = isSelected(card.id);
-  select.setAttribute('aria-label', `Select ${card.name}`);
+  select.className = 'voter-card__select';
+  select.checked = isSelected(voter.id);
+  select.setAttribute('aria-label', `Select ${voter.name}`);
   select.addEventListener('click', (e) => {
     e.stopPropagation();
     e.preventDefault();
     if ((e as MouseEvent).shiftKey) {
-      selectRange(columnCardIds, card.id);
+      selectRange(columnVoterIds, voter.id);
     } else {
-      toggleSelect(card.id);
+      toggleSelect(voter.id);
     }
     rerender();
   });
 
   const name = document.createElement('div');
-  name.className = 'card__name';
-  name.textContent = card.name;
+  name.className = 'voter-card__name';
+  name.textContent = voter.name;
 
   const addr = document.createElement('div');
-  addr.className = 'card__address';
-  addr.textContent = `${card.street}, ${card.city}, ${card.state} ${card.zip}`;
+  addr.className = 'voter-card__address';
+  addr.textContent = `${voter.street}, ${voter.city}, ${voter.state} ${voter.zip}`;
 
   const controls = document.createElement('div');
-  controls.className = 'card__controls';
+  controls.className = 'voter-card__controls';
 
   const editBtn = document.createElement('button');
-  editBtn.className = 'card__icon-btn';
-  editBtn.setAttribute('aria-label', 'Edit card');
+  editBtn.className = 'voter-card__icon-btn';
+  editBtn.setAttribute('aria-label', 'Edit voter');
   editBtn.textContent = '✎';
   editBtn.addEventListener('click', (e) => {
     e.stopPropagation();
-    openCardForm(projectId, rerender, card);
+    openVoterForm(projectId, rerender, voter);
   });
 
   const deleteBtn = document.createElement('button');
-  deleteBtn.className = 'card__icon-btn';
-  deleteBtn.setAttribute('aria-label', 'Delete card');
+  deleteBtn.className = 'voter-card__icon-btn';
+  deleteBtn.setAttribute('aria-label', 'Delete voter');
   deleteBtn.textContent = '×';
   deleteBtn.addEventListener('click', (e) => {
     e.stopPropagation();
-    if (confirm(`Delete the card for ${card.name}?`)) {
-      deleteCard(card.id);
-      removeFromSelection(card.id);
+    if (confirm(`Delete the voter for ${voter.name}?`)) {
+      deleteVoter(voter.id);
+      removeFromSelection(voter.id);
       rerender();
     }
   });
@@ -82,50 +82,50 @@ export function createCardElement(
 
   el.addEventListener('click', (e) => {
     if (e.shiftKey) {
-      selectRange(columnCardIds, card.id);
+      selectRange(columnVoterIds, voter.id);
       rerender();
       return;
     }
     if (e.ctrlKey || e.metaKey) {
-      toggleSelect(card.id);
+      toggleSelect(voter.id);
       rerender();
       return;
     }
-    openDetailView(card, projectId, rerender);
+    openDetailView(voter, projectId, rerender);
   });
 
   el.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      openDetailView(card, projectId, rerender);
+      openDetailView(voter, projectId, rerender);
       return;
     }
-    const currentIndex = COLUMN_ORDER.indexOf(card.status);
-    const movingSelection = isSelected(card.id) && getSelectedCount() > 1;
+    const currentIndex = COLUMN_ORDER.indexOf(voter.status);
+    const movingSelection = isSelected(voter.id) && getSelectedCount() > 1;
     if (e.key === 'ArrowRight' && currentIndex < COLUMN_ORDER.length - 1) {
       e.preventDefault();
       const target = COLUMN_ORDER[currentIndex + 1];
       if (movingSelection) {
-        moveCards(getSelectedIds(), target);
+        moveVoters(getSelectedIds(), target);
         clearSelection();
       } else {
-        moveCard(card.id, target, null);
+        moveVoter(voter.id, target, null);
       }
       rerender();
     } else if (e.key === 'ArrowLeft' && currentIndex > 0) {
       e.preventDefault();
       const target = COLUMN_ORDER[currentIndex - 1];
       if (movingSelection) {
-        moveCards(getSelectedIds(), target);
+        moveVoters(getSelectedIds(), target);
         clearSelection();
       } else {
-        moveCard(card.id, target, null);
+        moveVoter(voter.id, target, null);
       }
       rerender();
     }
   });
 
-  makeCardDraggable(el, card);
+  makeVoterDraggable(el, voter);
 
   return el;
 }

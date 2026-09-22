@@ -16,7 +16,7 @@ export interface Project {
   createdAt: string;
 }
 
-export interface Card {
+export interface Voter {
   id: string;
   projectId: string;
   name: string;
@@ -33,7 +33,7 @@ export interface StoredState {
   version: 1;
   projects: Project[];
   activeProjectId: string | null;
-  cards: Card[];
+  voters: Voter[];
   /** Lines from a PDF/paste import that might be addresses but couldn't be parsed automatically, awaiting manual review. */
   suspectQueues: Record<string, string[]>;
 }

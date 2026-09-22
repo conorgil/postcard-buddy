@@ -1,4 +1,4 @@
-import { addCard, getSuspectQueue, removeFromSuspectQueue } from '../storage';
+import { addVoter, clearSuspectQueue, getSuspectQueue, removeFromSuspectQueue } from '../storage';
 
 export function openReviewSuspectsForm(projectId: string, rerender: () => void): void {
   const overlay = document.createElement('div');
@@ -21,13 +21,38 @@ export function openReviewSuspectsForm(projectId: string, rerender: () => void):
   const actions = document.createElement('div');
   actions.className = 'form-actions';
 
+  const addAllBtn = document.createElement('button');
+  addAllBtn.type = 'button';
+  addAllBtn.className = 'btn btn--secondary';
+  addAllBtn.textContent = 'Add all as voters';
+  addAllBtn.addEventListener('click', () => {
+    for (const line of getSuspectQueue(projectId)) {
+      addVoter(projectId, { name: line, street: '', city: '', state: '', zip: '' });
+    }
+    clearSuspectQueue(projectId);
+    list.replaceChildren();
+    rerender();
+    close();
+  });
+
+  const discardAllBtn = document.createElement('button');
+  discardAllBtn.type = 'button';
+  discardAllBtn.className = 'btn btn--danger';
+  discardAllBtn.textContent = 'Discard all';
+  discardAllBtn.addEventListener('click', () => {
+    clearSuspectQueue(projectId);
+    list.replaceChildren();
+    rerender();
+    close();
+  });
+
   const closeBtn = document.createElement('button');
   closeBtn.type = 'button';
   closeBtn.className = 'btn btn--secondary';
   closeBtn.textContent = 'Close';
   closeBtn.addEventListener('click', close);
 
-  actions.append(closeBtn);
+  actions.append(addAllBtn, discardAllBtn, closeBtn);
   panel.append(title, hint, list, actions);
   overlay.appendChild(panel);
   document.body.appendChild(overlay);
@@ -70,7 +95,7 @@ export function openReviewSuspectsForm(projectId: string, rerender: () => void):
     addBtn.className = 'btn btn--primary';
     addBtn.textContent = 'Add as voter';
     addBtn.addEventListener('click', () => {
-      addCard(projectId, { name: line, street: '', city: '', state: '', zip: '' });
+      addVoter(projectId, { name: line, street: '', city: '', state: '', zip: '' });
       item.remove();
       resolve(line);
     });
