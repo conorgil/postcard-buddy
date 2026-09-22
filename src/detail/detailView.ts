@@ -96,7 +96,7 @@ export function openDetailView(voter: Voter, projectId: string, rerender: () => 
     const originalStatus = voter.status;
     const nextColumn = COLUMN_ORDER[columnIndex + 1];
     moveVoter(voter.id, nextColumn, null);
-    showToast(`Moved ${voter.name} to ${COLUMN_LABELS[nextColumn]}`, 'success');
+    showToast(`Moved previous voter (${voter.name}) to the ${COLUMN_LABELS[nextColumn]} column`, 'success');
 
     // Only the todo/writing stage auto-pulls in the next voter; later
     // stages (stamping, mailing) just advance the current voter.
