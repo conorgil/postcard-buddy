@@ -522,7 +522,7 @@ button {
 }
 
 .form-panel {
-  min-width: min(420px, 90vw);
+  width: min(420px, 90vw);
 }
 
 .paste-import-panel {
@@ -563,7 +563,8 @@ button {
   margin: 0;
 }
 
-.paste-import-hint {
+.paste-import-hint,
+.form-hint {
   color: var(--color-text-muted);
   font-size: 0.9rem;
   margin: -0.5rem 0 1rem;

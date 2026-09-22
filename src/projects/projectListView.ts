@@ -1,5 +1,6 @@
+import { openNewProjectForm } from '../forms/newProjectForm';
 import { createHelpButton } from '../splash/helpButton';
-import { createProject, deleteProject, getVotersForProject, getProjects, renameProject, setActiveProject } from '../storage';
+import { deleteProject, getVotersForProject, getProjects, renameProject, setActiveProject } from '../storage';
 
 export function renderProjectList(container: HTMLElement, rerender: () => void): void {
   const wrapper = document.createElement('div');
@@ -14,12 +15,7 @@ export function renderProjectList(container: HTMLElement, rerender: () => void):
   const newBtn = document.createElement('button');
   newBtn.className = 'btn btn--primary';
   newBtn.textContent = '+ New Project';
-  newBtn.addEventListener('click', () => {
-    const name = window.prompt('Project name:');
-    if (!name || !name.trim()) return;
-    createProject(name);
-    rerender();
-  });
+  newBtn.addEventListener('click', () => openNewProjectForm(rerender));
 
   header.append(title, newBtn, createHelpButton());
 
