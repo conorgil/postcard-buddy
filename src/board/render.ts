@@ -4,11 +4,20 @@ import { openPasteImportForm } from '../forms/pasteImportForm';
 import { openPdfImportForm } from '../forms/pdfImportForm';
 import { openReviewSuspectsForm } from '../forms/reviewSuspectsForm';
 import { createHelpButton } from '../splash/helpButton';
-import { getVotersForProject, getSuspectQueue, renameProject, setActiveProject } from '../storage';
-import { COLUMN_LABELS, COLUMN_ORDER, type Project } from '../types';
+import {
+  addColumn,
+  deleteColumn,
+  getColumns,
+  getVotersForProject,
+  getSuspectQueue,
+  renameColumn,
+  renameProject,
+  setActiveProject,
+} from '../storage';
+import type { Project } from '../types';
 import { createDropdownButton } from '../ui/dropdownMenu';
 import { createVoterElement } from './voter';
-import { makeColumnDroppable } from './dragDrop';
+import { makeBoardColumnDroppable, makeColumnDraggable, makeColumnDroppable } from './dragDrop';
 import { clearSelection, isSelected, toggleSelectAllInColumn } from './selection';
 
 export function renderBoardView(container: HTMLElement, project: Project, rerender: () => void): void {
@@ -139,21 +148,99 @@ export function renderBoardView(container: HTMLElement, project: Project, rerend
   board.className = 'board';
 
   const voters = getVotersForProject(project.id);
+  const columns = getColumns(project.id);
 
-  for (const columnId of COLUMN_ORDER) {
-    const column = document.createElement('section');
-    column.className = 'column';
-    column.dataset.columnId = columnId;
+  for (const column of columns) {
+    const columnEl = document.createElement('section');
+    columnEl.className = 'column';
+    columnEl.dataset.columnId = column.id;
 
-    const columnVoters = voters.filter((v) => v.status === columnId).sort((a, b) => a.order - b.order);
+    const columnVoters = voters.filter((v) => v.status === column.id).sort((a, b) => a.order - b.order);
     const columnVoterIds = columnVoters.map((v) => v.id);
     const selectedInColumn = columnVoterIds.filter((id) => isSelected(id)).length;
 
     const columnHeader = document.createElement('div');
     columnHeader.className = 'column__header';
 
-    const columnLabel = document.createElement('span');
-    columnLabel.textContent = `${COLUMN_LABELS[columnId]} (${columnVoters.length})`;
+    const columnHeaderTop = document.createElement('div');
+    columnHeaderTop.className = 'column__header-top';
+
+    const dragHandle = document.createElement('span');
+    dragHandle.className = 'column__drag-handle';
+    dragHandle.setAttribute('aria-label', 'Reorder column');
+    dragHandle.textContent = '⠿';
+
+    const titleWrap = document.createElement('div');
+    titleWrap.className = 'column__title-wrap';
+
+    const headerError = document.createElement('p');
+    headerError.className = 'column__header-error';
+    headerError.hidden = true;
+
+    function showColumnError(message: string): void {
+      headerError.textContent = message;
+      headerError.hidden = false;
+    }
+
+    function showColumnTitleButton(): void {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'column__title column__title--editable';
+      button.textContent = `${column.label} (${columnVoters.length})`;
+      button.setAttribute('aria-label', 'Rename column');
+      button.addEventListener('click', showColumnTitleEditor);
+      titleWrap.replaceChildren(button);
+    }
+
+    function showColumnTitleEditor(): void {
+      const form = document.createElement('form');
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'column__title-input';
+      input.required = true;
+      input.value = column.label;
+      form.append(input);
+
+      titleWrap.replaceChildren(form);
+
+      let cancelled = false;
+
+      function commit(): void {
+        const label = input.value.trim();
+        if (!label || label === column.label) {
+          showColumnTitleButton();
+          return;
+        }
+        if (!renameColumn(project.id, column.id, label)) {
+          showColumnError('A column with this name already exists.');
+          input.focus();
+          return;
+        }
+        rerender();
+      }
+
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        commit();
+      });
+
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          cancelled = true;
+          showColumnTitleButton();
+        }
+      });
+
+      input.addEventListener('blur', () => {
+        if (cancelled) return;
+        commit();
+      });
+
+      input.focus();
+      input.select();
+    }
+
+    showColumnTitleButton();
 
     const selectAllBtn = document.createElement('button');
     selectAllBtn.className = 'column__select-all';
@@ -165,20 +252,107 @@ export function renderBoardView(container: HTMLElement, project: Project, rerend
       rerender();
     });
 
-    columnHeader.append(columnLabel, selectAllBtn);
+    const menuBtn = createDropdownButton(
+      '⋯',
+      [
+        { label: 'Rename column', onSelect: showColumnTitleEditor },
+        {
+          label: 'Delete column',
+          onSelect: () => {
+            const result = deleteColumn(project.id, column.id);
+            if (result.ok) {
+              rerender();
+              return;
+            }
+            if (result.reason === 'not-empty') {
+              showColumnError(
+                `Move all ${result.voterCount} voter${result.voterCount === 1 ? '' : 's'} out of this column before deleting it.`,
+              );
+            } else if (result.reason === 'last-column') {
+              showColumnError('A project must have at least one column.');
+            }
+          },
+        },
+      ],
+      'secondary',
+    );
+
+    columnHeaderTop.append(dragHandle, titleWrap, selectAllBtn, menuBtn);
+    columnHeader.append(columnHeaderTop, headerError);
 
     const columnBody = document.createElement('div');
     columnBody.className = 'column__body';
 
     for (const voter of columnVoters) {
-      columnBody.appendChild(createVoterElement(voter, project.id, columnVoterIds, rerender));
+      columnBody.appendChild(createVoterElement(voter, project.id, columnVoterIds, columns, rerender));
     }
 
-    makeColumnDroppable(columnBody, columnId, rerender);
+    makeColumnDroppable(columnBody, column.id, rerender);
+    makeColumnDraggable(dragHandle, columnEl, column.id, rerender);
 
-    column.append(columnHeader, columnBody);
-    board.appendChild(column);
+    columnEl.append(columnHeader, columnBody);
+    board.appendChild(columnEl);
   }
+
+  const addColumnEl = document.createElement('section');
+  addColumnEl.className = 'column column--add';
+
+  function showAddColumnButton(): void {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'btn btn--secondary column__add-btn';
+    button.textContent = '+ Add column';
+    button.addEventListener('click', showAddColumnEditor);
+    addColumnEl.replaceChildren(button);
+  }
+
+  function showAddColumnEditor(): void {
+    const form = document.createElement('form');
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.required = true;
+    input.placeholder = 'Column name';
+
+    const errorText = document.createElement('p');
+    errorText.className = 'form-error';
+    errorText.hidden = true;
+
+    const actions = document.createElement('div');
+    actions.className = 'form-actions';
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.className = 'btn btn--secondary';
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.addEventListener('click', showAddColumnButton);
+    const saveBtn = document.createElement('button');
+    saveBtn.type = 'submit';
+    saveBtn.className = 'btn btn--primary';
+    saveBtn.textContent = 'Add';
+    actions.append(cancelBtn, saveBtn);
+
+    form.append(input, errorText, actions);
+    addColumnEl.replaceChildren(form);
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const label = input.value.trim();
+      if (!label) return;
+      if (!addColumn(project.id, label)) {
+        errorText.textContent = 'A column with this name already exists.';
+        errorText.hidden = false;
+        return;
+      }
+      rerender();
+    });
+
+    input.focus();
+  }
+
+  showAddColumnButton();
+  board.appendChild(addColumnEl);
+
+  makeBoardColumnDroppable(board, project.id);
 
   wrapper.append(header, board);
   container.appendChild(wrapper);

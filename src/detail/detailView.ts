@@ -1,5 +1,5 @@
-import { getVotersForProject, moveVoter } from '../storage';
-import { COLUMN_LABELS, COLUMN_ORDER, type Voter } from '../types';
+import { getColumns, getVotersForProject, moveVoter } from '../storage';
+import type { Voter } from '../types';
 import { showToast } from '../ui/toast';
 
 /**
@@ -22,9 +22,14 @@ function shrinkLinesToFit(lines: HTMLElement[]): void {
 }
 
 export function openDetailView(voter: Voter, projectId: string, rerender: () => void): void {
-  if (voter.status === COLUMN_ORDER[0]) {
-    moveVoter(voter.id, COLUMN_ORDER[1], null);
-    voter = { ...voter, status: COLUMN_ORDER[1] };
+  const columns = getColumns(projectId);
+  const firstColumn = columns[0];
+  const secondColumn = columns[1];
+  const thirdColumn = columns[2];
+
+  if (firstColumn && secondColumn && voter.status === firstColumn.id) {
+    moveVoter(voter.id, secondColumn.id, null);
+    voter = { ...voter, status: secondColumn.id };
     rerender();
   }
 
@@ -57,21 +62,18 @@ export function openDetailView(voter: Voter, projectId: string, rerender: () => 
 
   address.append(nameLine, streetLine, cityLine);
 
-  const columnIndex = COLUMN_ORDER.indexOf(voter.status);
-  const isLast = columnIndex === COLUMN_ORDER.length - 1;
+  const columnIndex = columns.findIndex((c) => c.id === voter.status);
+  const isLast = columnIndex === -1 || columnIndex === columns.length - 1;
 
   const footer = document.createElement('div');
   footer.className = 'detail-panel__footer';
 
-  const writingColumn = COLUMN_ORDER[1];
-  const writtenColumn = COLUMN_ORDER[2];
-
-  if (voter.status === writingColumn) {
+  if (secondColumn && thirdColumn && voter.status === secondColumn.id) {
     const doneBtn = document.createElement('button');
     doneBtn.className = 'btn btn--secondary detail-panel__advance';
     doneBtn.textContent = 'Done';
     doneBtn.addEventListener('click', () => {
-      moveVoter(voter.id, writtenColumn, null);
+      moveVoter(voter.id, thirdColumn.id, null);
       close();
       rerender();
     });
@@ -94,24 +96,24 @@ export function openDetailView(voter: Voter, projectId: string, rerender: () => 
   function goToNextVoter(): void {
     if (isLast) return;
     const originalStatus = voter.status;
-    const nextColumn = COLUMN_ORDER[columnIndex + 1];
-    moveVoter(voter.id, nextColumn, null);
-    showToast(`Moved previous voter (${voter.name}) to the ${COLUMN_LABELS[nextColumn]} column`, 'success');
+    const nextColumn = columns[columnIndex + 1];
+    moveVoter(voter.id, nextColumn.id, null);
+    showToast(`Moved previous voter (${voter.name}) to the ${nextColumn.label} column`, 'success');
 
     // Only the todo/writing stage auto-pulls in the next voter; later
     // stages (stamping, mailing) just advance the current voter.
-    const todoColumn = COLUMN_ORDER[0];
-    const writingColumn = COLUMN_ORDER[1];
-    const isWritingStage = originalStatus === todoColumn || originalStatus === writingColumn;
+    const isWritingStage =
+      !!firstColumn && !!secondColumn && (originalStatus === firstColumn.id || originalStatus === secondColumn.id);
 
-    const nextVoter = isWritingStage
-      ? getVotersForProject(projectId)
-          .filter((v) => v.status === todoColumn && v.id !== voter.id)
-          .sort((a, b) => a.order - b.order)[0]
-      : undefined;
+    const nextVoter =
+      isWritingStage && firstColumn
+        ? getVotersForProject(projectId)
+            .filter((v) => v.status === firstColumn.id && v.id !== voter.id)
+            .sort((a, b) => a.order - b.order)[0]
+        : undefined;
 
-    if (nextVoter) {
-      moveVoter(nextVoter.id, writingColumn, null);
+    if (nextVoter && secondColumn) {
+      moveVoter(nextVoter.id, secondColumn.id, null);
     }
 
     close();

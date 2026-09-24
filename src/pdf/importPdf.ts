@@ -1,4 +1,4 @@
-import { addVoters, dedupeKey, getVotersForProject } from '../storage';
+import { addVoters, dedupeKey, getColumns, getVotersForProject } from '../storage';
 import type { Voter } from '../types';
 import { extractAllLines } from './extractLines';
 import { looksLikeDataRow, looksLikeSuspectedAddress, parseVoterLine, type ParsedRecord } from './parseVoterLine';
@@ -22,8 +22,9 @@ export function importRecords(
     existingVoters.map((v) => dedupeKey(projectId, v.name, v.street, v.city, v.state, v.zip)),
   );
 
+  const firstColumnId = getColumns(projectId)[0]?.id ?? '';
   let nextOrder =
-    existingVoters.filter((v) => v.status === 'todo').reduce((max, v) => Math.max(max, v.order), -1) + 1;
+    existingVoters.filter((v) => v.status === firstColumnId).reduce((max, v) => Math.max(max, v.order), -1) + 1;
 
   const newVoters: Voter[] = [];
   let imported = 0;
@@ -45,7 +46,7 @@ export function importRecords(
       city: record.city,
       state: record.state,
       zip: record.zip,
-      status: 'todo',
+      status: firstColumnId,
       order: nextOrder++,
       createdAt: new Date().toISOString(),
     });

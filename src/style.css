@@ -208,6 +208,7 @@ button {
 }
 
 .board {
+  position: relative;
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: minmax(240px, 1fr);
@@ -233,8 +234,107 @@ button {
   text-transform: uppercase;
   letter-spacing: 0.03em;
   display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.column__header-top {
+  display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.column__title-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.column__title {
+  font: inherit;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  padding: 0.15rem 0.3rem;
+  margin-left: -0.3rem;
+  cursor: pointer;
+  color: inherit;
+}
+.column__title:hover {
+  background: #dfe3ea;
+}
+
+.column__title-input {
+  font: inherit;
+  text-transform: none;
+  width: 100%;
+  padding: 0.15rem 0.3rem;
+  margin-left: -0.3rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-panel);
+}
+
+.column__header-error {
+  color: var(--color-danger);
+  font-size: 0.75rem;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  margin: 0;
+}
+
+.column__header-top .dropdown > .btn {
+  padding: 0.15rem 0.5rem;
+  font-size: 0.8rem;
+  text-transform: none;
+  letter-spacing: normal;
+  flex-shrink: 0;
+}
+
+.column__drag-handle {
+  cursor: grab;
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+.column__drag-handle:hover {
+  opacity: 1;
+}
+
+.column.column--dragging {
+  opacity: 0.5;
+  outline: 2px solid var(--color-border);
+  outline-offset: -2px;
+  border-radius: var(--radius);
+}
+
+.column-drop-indicator {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--color-primary);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.column--add {
+  background: transparent;
+  border: 2px dashed var(--color-border);
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.column__add-btn {
+  width: 100%;
+}
+
+.column--add form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
   gap: 0.5rem;
 }
 
@@ -540,6 +640,9 @@ button {
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 400;
 }
 
 .dropdown__menu[hidden] {

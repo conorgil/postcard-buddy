@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { getColumns } from '../storage';
 import type { Project, Voter } from '../types';
 import { buildExportRows, summarizeByStatus } from './buildExportRows';
 
@@ -23,6 +24,7 @@ function localDateStamp(date: Date): string {
 }
 
 export function exportVoterStatusPdf(project: Project, voters: Voter[]): void {
+  const columns = getColumns(project.id);
   const now = new Date();
   const doc = new jsPDF({ unit: 'pt' });
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -61,13 +63,20 @@ export function exportVoterStatusPdf(project: Project, voters: Voter[]): void {
 
   const generatedOn = `Generated on ${now.toLocaleDateString()}`;
   doc.text(generatedOn, PAGE_MARGIN, introBottom + 16);
-  doc.text(summarizeByStatus(voters), PAGE_MARGIN, introBottom + 32);
+  doc.text(summarizeByStatus(voters, columns), PAGE_MARGIN, introBottom + 32);
 
   autoTable(doc, {
     startY: introBottom + 48,
     margin: { left: PAGE_MARGIN, right: PAGE_MARGIN },
     head: [['Name', 'Street', 'City', 'State', 'ZIP', 'Status']],
-    body: buildExportRows(voters).map((row) => [row.name, row.street, row.city, row.state, row.zip, row.status]),
+    body: buildExportRows(voters, columns).map((row) => [
+      row.name,
+      row.street,
+      row.city,
+      row.state,
+      row.zip,
+      row.status,
+    ]),
   });
 
   doc.save(`${slugify(project.name)}-voter-status-${localDateStamp(now)}.pdf`);

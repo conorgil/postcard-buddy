@@ -1,7 +1,7 @@
 import { openDetailView } from '../detail/detailView';
 import { openVoterForm } from '../forms/voterForm';
 import { deleteVoter, moveVoter, moveVoters } from '../storage';
-import { COLUMN_ORDER, type Voter } from '../types';
+import type { Column, Voter } from '../types';
 import { makeVoterDraggable } from './dragDrop';
 import {
   clearSelection,
@@ -17,6 +17,7 @@ export function createVoterElement(
   voter: Voter,
   projectId: string,
   columnVoterIds: string[],
+  columns: Column[],
   rerender: () => void,
 ): HTMLElement {
   const el = document.createElement('div');
@@ -100,11 +101,11 @@ export function createVoterElement(
       openDetailView(voter, projectId, rerender);
       return;
     }
-    const currentIndex = COLUMN_ORDER.indexOf(voter.status);
+    const currentIndex = columns.findIndex((c) => c.id === voter.status);
     const movingSelection = isSelected(voter.id) && getSelectedCount() > 1;
-    if (e.key === 'ArrowRight' && currentIndex < COLUMN_ORDER.length - 1) {
+    if (e.key === 'ArrowRight' && currentIndex !== -1 && currentIndex < columns.length - 1) {
       e.preventDefault();
-      const target = COLUMN_ORDER[currentIndex + 1];
+      const target = columns[currentIndex + 1].id;
       if (movingSelection) {
         moveVoters(getSelectedIds(), target);
         clearSelection();
@@ -114,7 +115,7 @@ export function createVoterElement(
       rerender();
     } else if (e.key === 'ArrowLeft' && currentIndex > 0) {
       e.preventDefault();
-      const target = COLUMN_ORDER[currentIndex - 1];
+      const target = columns[currentIndex - 1].id;
       if (movingSelection) {
         moveVoters(getSelectedIds(), target);
         clearSelection();

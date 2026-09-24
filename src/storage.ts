@@ -1,9 +1,14 @@
-import type { ColumnId, Project, StoredState, Voter } from './types';
+import type { Column, ColumnId, Project, StoredState, Voter } from './types';
+import { DEFAULT_COLUMNS } from './types';
 
 const STORAGE_KEY = 'hello-fellow-voter:v1';
 
+function cloneDefaultColumns(): Column[] {
+  return DEFAULT_COLUMNS.map((c) => ({ ...c }));
+}
+
 function emptyState(): StoredState {
-  return { version: 1, projects: [], activeProjectId: null, voters: [], suspectQueues: {} };
+  return { version: 1, projects: [], activeProjectId: null, voters: [], suspectQueues: {}, columns: {} };
 }
 
 function loadState(): StoredState {
@@ -23,6 +28,13 @@ function loadState(): StoredState {
       delete parsed.cards;
     }
     if (!parsed.voters) parsed.voters = [];
+    // Older stored state predates customizable columns; backfill the same defaults every board used to show.
+    if (!parsed.columns) parsed.columns = {};
+    for (const project of parsed.projects ?? []) {
+      if (!parsed.columns[project.id]) {
+        parsed.columns[project.id] = cloneDefaultColumns();
+      }
+    }
     return parsed as StoredState;
   } catch (err) {
     console.warn('hello-fellow-voter: failed to parse stored state, resetting', err);
@@ -114,6 +126,7 @@ export function createProject(name: string): Project | null {
   };
   state.projects.push(project);
   state.activeProjectId = project.id;
+  state.columns[project.id] = cloneDefaultColumns();
   saveState(state);
   return project;
 }
@@ -134,7 +147,80 @@ export function deleteProject(id: string): void {
   state.projects = state.projects.filter((p) => p.id !== id);
   state.voters = state.voters.filter((v) => v.projectId !== id);
   if (state.activeProjectId === id) state.activeProjectId = null;
+  delete state.columns[id];
+  delete state.suspectQueues[id];
   saveState(state);
+}
+
+// --- Columns ---
+
+export function getColumns(projectId: string): Column[] {
+  return loadState().columns[projectId] ?? [];
+}
+
+function isDuplicateColumnLabel(columns: Column[], label: string, excludeId?: string): boolean {
+  const key = label.trim().toLowerCase();
+  return columns.some((c) => c.id !== excludeId && c.label.trim().toLowerCase() === key);
+}
+
+/** Returns null if a column with this label (case-insensitive) already exists in the project. */
+export function addColumn(projectId: string, label: string): Column | null {
+  const state = loadState();
+  const columns = state.columns[projectId] ?? [];
+  if (isDuplicateColumnLabel(columns, label)) return null;
+  const column: Column = { id: crypto.randomUUID(), label: label.trim() };
+  state.columns[projectId] = [...columns, column];
+  saveState(state);
+  return column;
+}
+
+/** Returns false if the column doesn't exist or another column in the project already has this label. */
+export function renameColumn(projectId: string, columnId: string, label: string): boolean {
+  const state = loadState();
+  const columns = state.columns[projectId] ?? [];
+  const column = columns.find((c) => c.id === columnId);
+  if (!column) return false;
+  if (isDuplicateColumnLabel(columns, label, columnId)) return false;
+  column.label = label.trim();
+  saveState(state);
+  return true;
+}
+
+export type DeleteColumnResult =
+  | { ok: true }
+  | { ok: false; reason: 'not-found' }
+  | { ok: false; reason: 'last-column' }
+  | { ok: false; reason: 'not-empty'; voterCount: number };
+
+/** Refuses to delete the project's last remaining column, or a column that still has voters in it. */
+export function deleteColumn(projectId: string, columnId: string): DeleteColumnResult {
+  const state = loadState();
+  const columns = state.columns[projectId] ?? [];
+  const column = columns.find((c) => c.id === columnId);
+  if (!column) return { ok: false, reason: 'not-found' };
+  if (columns.length <= 1) return { ok: false, reason: 'last-column' };
+  const voterCount = state.voters.filter((v) => v.projectId === projectId && v.status === columnId).length;
+  if (voterCount > 0) return { ok: false, reason: 'not-empty', voterCount };
+  state.columns[projectId] = columns.filter((c) => c.id !== columnId);
+  saveState(state);
+  return { ok: true };
+}
+
+/** Reorders a project's columns; newOrderOfIds must be a permutation of its current column ids. */
+export function reorderColumns(projectId: string, newOrderOfIds: string[]): boolean {
+  const state = loadState();
+  const columns = state.columns[projectId] ?? [];
+  if (newOrderOfIds.length !== columns.length) return false;
+  const byId = new Map(columns.map((c) => [c.id, c]));
+  const reordered: Column[] = [];
+  for (const id of newOrderOfIds) {
+    const column = byId.get(id);
+    if (!column) return false;
+    reordered.push(column);
+  }
+  state.columns[projectId] = reordered;
+  saveState(state);
+  return true;
 }
 
 // --- Voters ---
@@ -158,6 +244,7 @@ export interface NewVoterInput {
 
 export function addVoter(projectId: string, input: NewVoterInput): Voter {
   const state = loadState();
+  const firstColumnId = state.columns[projectId]?.[0]?.id ?? '';
   const voter: Voter = {
     id: crypto.randomUUID(),
     projectId,
@@ -166,8 +253,8 @@ export function addVoter(projectId: string, input: NewVoterInput): Voter {
     city: input.city.trim(),
     state: input.state.trim(),
     zip: input.zip.trim(),
-    status: 'todo',
-    order: nextOrderInColumn(state.voters, projectId, 'todo'),
+    status: firstColumnId,
+    order: nextOrderInColumn(state.voters, projectId, firstColumnId),
     createdAt: new Date().toISOString(),
   };
   state.voters.push(voter);

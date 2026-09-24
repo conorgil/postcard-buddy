@@ -1,14 +1,17 @@
-export type ColumnId = 'todo' | 'writing' | 'written' | 'stamped' | 'mailed';
+export type ColumnId = string;
 
-export const COLUMN_ORDER: ColumnId[] = ['todo', 'writing', 'written', 'stamped', 'mailed'];
+export interface Column {
+  id: string;
+  label: string;
+}
 
-export const COLUMN_LABELS: Record<ColumnId, string> = {
-  todo: 'TODO',
-  writing: 'Writing',
-  written: 'Written',
-  stamped: 'Stamp Applied',
-  mailed: 'Mailed',
-};
+export const DEFAULT_COLUMNS: Column[] = [
+  { id: 'todo', label: 'TODO' },
+  { id: 'writing', label: 'Writing' },
+  { id: 'written', label: 'Written' },
+  { id: 'stamped', label: 'Stamp Applied' },
+  { id: 'mailed', label: 'Mailed' },
+];
 
 export interface Project {
   id: string;
@@ -36,4 +39,5 @@ export interface StoredState {
   voters: Voter[];
   /** Lines from a PDF/paste import that might be addresses but couldn't be parsed automatically, awaiting manual review. */
   suspectQueues: Record<string, string[]>;
+  columns: Record<string, Column[]>;
 }
