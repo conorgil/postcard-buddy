@@ -186,9 +186,18 @@ export function renderBoardView(container: HTMLElement, project: Project, rerend
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'column__title column__title--editable';
-      button.textContent = `${column.label} (${columnVoters.length})`;
       button.setAttribute('aria-label', 'Rename column');
       button.addEventListener('click', showColumnTitleEditor);
+
+      const labelSpan = document.createElement('span');
+      labelSpan.className = 'column__title-label';
+      labelSpan.textContent = column.label;
+
+      const countSpan = document.createElement('span');
+      countSpan.className = 'column__title-count';
+      countSpan.textContent = String(columnVoters.length);
+
+      button.append(labelSpan, countSpan);
       titleWrap.replaceChildren(button);
     }
 
@@ -242,19 +251,17 @@ export function renderBoardView(container: HTMLElement, project: Project, rerend
 
     showColumnTitleButton();
 
-    const selectAllBtn = document.createElement('button');
-    selectAllBtn.className = 'column__select-all';
-    selectAllBtn.textContent =
-      selectedInColumn > 0 ? `${selectedInColumn} selected` : 'Select all';
-    selectAllBtn.disabled = columnVoterIds.length === 0;
-    selectAllBtn.addEventListener('click', () => {
-      toggleSelectAllInColumn(columnVoterIds);
-      rerender();
-    });
-
     const menuBtn = createDropdownButton(
       '⋯',
       [
+        {
+          label: selectedInColumn > 0 ? `${selectedInColumn} selected` : 'Select all',
+          onSelect: () => {
+            toggleSelectAllInColumn(columnVoterIds);
+            rerender();
+          },
+          disabled: columnVoterIds.length === 0,
+        },
         { label: 'Rename column', onSelect: showColumnTitleEditor },
         {
           label: 'Delete column',
@@ -277,7 +284,7 @@ export function renderBoardView(container: HTMLElement, project: Project, rerend
       'secondary',
     );
 
-    columnHeaderTop.append(dragHandle, titleWrap, selectAllBtn, menuBtn);
+    columnHeaderTop.append(dragHandle, titleWrap, menuBtn);
     columnHeader.append(columnHeaderTop, headerError);
 
     const columnBody = document.createElement('div');

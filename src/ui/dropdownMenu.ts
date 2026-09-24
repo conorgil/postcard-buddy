@@ -1,6 +1,7 @@
 export interface DropdownOption {
   label: string;
   onSelect: () => void;
+  disabled?: boolean;
 }
 
 export function createDropdownButton(
@@ -25,6 +26,7 @@ export function createDropdownButton(
     item.type = 'button';
     item.className = 'dropdown__item';
     item.textContent = option.label;
+    item.disabled = option.disabled ?? false;
     item.addEventListener('click', () => {
       close();
       option.onSelect();
