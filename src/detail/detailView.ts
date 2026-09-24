@@ -30,6 +30,7 @@ export function openDetailView(voter: Voter, projectId: string, rerender: () => 
   if (firstColumn && secondColumn && voter.status === firstColumn.id) {
     moveVoter(voter.id, secondColumn.id, null);
     voter = { ...voter, status: secondColumn.id };
+    showToast(`Moved ${voter.name} to the ${secondColumn.label} column`, 'success');
     rerender();
   }
 
