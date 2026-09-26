@@ -1,3 +1,4 @@
+import stampImageUrl from '../assets/stamp.jpg';
 import { getColumns, getVotersForProject, moveVoter } from '../storage';
 import type { Voter } from '../types';
 import { showToast } from '../ui/toast';
@@ -19,6 +20,28 @@ function shrinkLinesToFit(lines: HTMLElement[]): void {
   for (const line of lines) {
     line.style.fontSize = fittedFontSize;
   }
+}
+
+function attachTooltip(el: HTMLElement, html: string, ariaLabel: string, delayMs: number): void {
+  const tooltip = document.createElement('div');
+  tooltip.className = 'tooltip';
+  tooltip.innerHTML = html;
+  tooltip.hidden = true;
+  el.setAttribute('aria-label', ariaLabel);
+  el.appendChild(tooltip);
+
+  let timer: ReturnType<typeof setTimeout> | undefined;
+
+  el.addEventListener('mouseenter', () => {
+    timer = setTimeout(() => {
+      tooltip.hidden = false;
+    }, delayMs);
+  });
+
+  el.addEventListener('mouseleave', () => {
+    clearTimeout(timer);
+    tooltip.hidden = true;
+  });
 }
 
 export function openDetailView(voter: Voter, projectId: string, rerender: () => void): void {
@@ -46,6 +69,45 @@ export function openDetailView(voter: Voter, projectId: string, rerender: () => 
   closeBtn.textContent = '×';
   closeBtn.addEventListener('click', close);
 
+  const closeRow = document.createElement('div');
+  closeRow.className = 'detail-panel__close-row';
+  closeRow.appendChild(closeBtn);
+
+  const postcard = document.createElement('div');
+  postcard.className = 'postcard';
+
+  const message = document.createElement('div');
+  message.className = 'postcard__message';
+
+  for (let i = 0; i < 3; i++) {
+    const ruleLine = document.createElement('div');
+    ruleLine.className = 'postcard__rule-line';
+    if (i === 0) {
+      const messagePlaceholder = document.createElement('span');
+      messagePlaceholder.className = 'postcard__message-placeholder';
+      messagePlaceholder.textContent = 'Your message goes here!';
+      ruleLine.appendChild(messagePlaceholder);
+    }
+    message.appendChild(ruleLine);
+  }
+
+  const right = document.createElement('div');
+  right.className = 'postcard__right';
+
+  const stamp = document.createElement('div');
+  stamp.className = 'postcard__stamp';
+  const stampImg = document.createElement('img');
+  stampImg.className = 'postcard__stamp-img';
+  stampImg.src = stampImageUrl;
+  stampImg.alt = 'Stamp';
+  stamp.appendChild(stampImg);
+  attachTooltip(
+    stamp,
+    'This is where the stamp goes. To save money, make sure to buy a <strong>postcard stamp</strong> ($0.65) instead of a normal letter stamp ($0.82). You can buy postcard stamps at the post office or online at <a href="https://store.usps.com/store/stamps/postcard/_/N-16jpffz" target="_blank" rel="noopener noreferrer">usps.com</a>.',
+    'This is where the stamp goes. To save money, buy a postcard stamp instead of a normal letter stamp.',
+    1000,
+  );
+
   const address = document.createElement('div');
   address.className = 'postcard-address';
 
@@ -62,6 +124,8 @@ export function openDetailView(voter: Voter, projectId: string, rerender: () => 
   cityLine.textContent = `${voter.city}, ${voter.state} ${voter.zip}`;
 
   address.append(nameLine, streetLine, cityLine);
+  right.append(stamp, address);
+  postcard.append(message, right);
 
   const columnIndex = columns.findIndex((c) => c.id === voter.status);
   const isLast = columnIndex === -1 || columnIndex === columns.length - 1;
@@ -88,7 +152,7 @@ export function openDetailView(voter: Voter, projectId: string, rerender: () => 
   advanceBtn.addEventListener('click', goToNextVoter);
   footer.append(advanceBtn);
 
-  panel.append(closeBtn, address, footer);
+  panel.append(closeRow, postcard, footer);
   overlay.appendChild(panel);
   document.body.appendChild(overlay);
 
