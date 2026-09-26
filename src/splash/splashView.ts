@@ -14,6 +14,10 @@ export function openSplash(offerPermanentDismiss = true): void {
   closeBtn.textContent = '×';
   closeBtn.addEventListener('click', close);
 
+  const closeRow = document.createElement('div');
+  closeRow.className = 'detail-panel__close-row';
+  closeRow.appendChild(closeBtn);
+
   const content = document.createElement('div');
   content.className = 'splash-content';
   content.innerHTML = splashHtml;
@@ -45,7 +49,7 @@ export function openSplash(offerPermanentDismiss = true): void {
     actions.append(dismissBtn);
   }
 
-  panel.append(closeBtn, content, actions);
+  panel.append(closeRow, content, actions);
   overlay.appendChild(panel);
   document.body.appendChild(overlay);
 
